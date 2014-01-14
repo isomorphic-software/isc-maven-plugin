@@ -109,7 +109,6 @@
                 <artifactId>site-maven-plugin</artifactId>
                 <version>0.9</version>
                 <configuration>
-                        <dryRun>true</dryRun>
                         <message>Building site for ${project.version}</message>
                         <server>github</server>
                         <repositoryOwner>isomorphic-software</repositoryOwner>

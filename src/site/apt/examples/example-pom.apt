@@ -18,7 +18,8 @@
                                                                             Example
 
     The dependencies you'll need in your own project will vary depending on what you've licensed and what framework features you're using.
-    A POM like the one below is suitable for building the BuiltInDS project bundled with the SDK.
+    A POM like the one below is suitable for building the BuiltInDS project bundled with the SDK (assuming you have source and resources
+    in standard locations).
 
 +----------------------------------------------------------------------------------------------------------------------------
 <?xml version="1.0" encoding="UTF-8"?>
@@ -27,20 +28,19 @@
 
     <modelVersion>4.0.0</modelVersion>
 
-    <groupId>com.acme.sandbox</groupId>
-    <artifactId>builtinds</artifactId>
+    <groupId>com.isomorphic.example</groupId>
+    <artifactId>isc-maven-builtinds</artifactId>
     <version>1.0.0-SNAPSHOT</version>
     <packaging>war</packaging>
 
     <properties>
         <gwt.version>2.5.1</gwt.version>
         <smartgwt.version>4.1-d20140101-SNAPSHOT</smartgwt.version>
-        <webapp.directory>${project.build.directory}/${project.build.finalName}</webapp.directory>
     </properties>
 
     <dependencies>
 
-        <!-- Required by any GWT application in Development Mode (Hosted Mode) -->
+        <!-- Standard GWT depdendency -->
         <dependency>
             <groupId>com.google.gwt</groupId>
             <artifactId>gwt-user</artifactId>
@@ -86,10 +86,11 @@
 
     <build>
         <plugins>
+            <!-- Standard GWT Compile -->
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>
                 <artifactId>gwt-maven-plugin</artifactId>
-                <version>2.5.1</version>
+                <version>${gwt.version}</version>
                 <executions>
                     <execution>
                         <goals>
@@ -98,16 +99,7 @@
                     </execution>
                 </executions>
             </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-war-plugin</artifactId>
-                <version>2.1.1</version>
-                <configuration>
-                    <webappDirectory>${webapp.directory}</webappDirectory>
-                </configuration>
-            </plugin>
         </plugins>
     </build>
 </project>
-
 +----------------------------------------------------------------------------------------------------------------------------
