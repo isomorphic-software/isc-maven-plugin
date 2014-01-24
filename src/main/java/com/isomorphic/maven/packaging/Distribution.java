@@ -187,7 +187,7 @@ public final class Distribution {
 			.contents("assembly/selenium-resources", SELENIUM_INCLUDES, null)
 			.contents("doc/api/client/#javadoc", SMARTGWT_CLIENT_JAVADOC, null)
 			.contents("doc/api/server/#javadoc", product == SMARTGWT ? SMARTGWT_SERVER_JAVADOC : SMARTCLIENT_JAVADOC, null)
-			.contents("lib", JAR_INCLUDES, product == SMARTCLIENT ? JAR_INCLUDES : JAR_EXCLUDES + ", " + JAR_CONFLICTS)
+			.contents("lib", JAR_INCLUDES, JAR_EXCLUDES + ", " + JAR_CONFLICTS)
 			.contents("lib/isc-jakarta-oro.jar", "**/isc-jakarta-oro*.jar", null)
 			.contents("lib/smartgwt-analytics.jar", "**/analytics.jar", null)
 			.contents("lib/smartgwt-messaging.jar", "**/messaging.jar", null)
