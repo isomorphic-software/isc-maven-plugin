@@ -424,7 +424,7 @@ public abstract class AbstractPackagerMojo extends AbstractMojo {
 	private Model getModelFromFile(File pom) throws ModelBuildingException, IOException {
 
 		if (buildNumber.endsWith("d") && !snapshots) {
-			LOGGER.info("Rewriting POM file to remove SNAPSHOT qualifier from development build.");
+			LOGGER.info("Rewriting file to remove SNAPSHOT qualifier from development POM '{}'", pom.getName());
 			String content = FileUtils.readFileToString(pom);
 	        content = content.replaceAll("-SNAPSHOT", "");
 	        FileUtils.write(pom, content);
