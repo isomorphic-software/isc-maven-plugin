@@ -97,7 +97,7 @@ public final class DeployMojo extends AbstractPackagerMojo {
 		Authentication authentication = getAuthentication(repositoryId);
     	builder.setAuthentication(authentication);
 
-    	LOGGER.info("Deploying to repositoryId '{}' with credentials: {}", repositoryId, authentication.toString());
+    	LOGGER.info("Deploying to repositoryId '{}' with credentials: {}", repositoryId, authentication == null ? null : authentication.toString());
     	
     	RemoteRepository repository = builder.build();
 		
