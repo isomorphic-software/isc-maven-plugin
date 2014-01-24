@@ -31,7 +31,7 @@
 	<packaging>maven-plugin</packaging>
 
 	<name>isc-maven-plugin</name>
-	<url>https://github.smartclient.com/isc-maven-plugin/</url>
+	<url>http://github.smartclient.com/isc-maven-plugin/</url>
 	<description>
         An officially supported collection of goals useful for using SmartClient / SmartGWT products in a Maven environment.
 	</description>
