@@ -22,12 +22,15 @@ package com.isomorphic.maven.packaging;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.List;
 
+import com.isomorphic.maven.util.LoggingCountingOutputStream;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
@@ -186,18 +189,20 @@ public class Downloads {
 	        }
 			
 			FileUtils.deleteQuietly(file);
-			
-			try {
 
-				LOGGER.info("Downloading file to '{}'", file.getAbsolutePath());
-				entity.writeTo(new FileOutputStream(file));
-				distribution.getFiles().add(file);
-				
-			} catch (Exception e) {
-				throw new MojoExecutionException("Error writing file to '" + file.getAbsolutePath() + "'", e);
-			}
+            OutputStream outputStream = null;
+
+            try {
+                LOGGER.info("Downloading file to '{}'", file.getAbsolutePath());
+                outputStream = new LoggingCountingOutputStream(new FileOutputStream(file), entity.getContentLength());
+                entity.writeTo(outputStream);
+                distribution.getFiles().add(file);
+            } catch (Exception e) {
+                throw new MojoExecutionException("Error writing file to '" + file.getAbsolutePath() + "'", e);
+            } finally {
+                IOUtils.closeQuietly(outputStream);
+            }
 		}
-		
 	}
 	
 	/**

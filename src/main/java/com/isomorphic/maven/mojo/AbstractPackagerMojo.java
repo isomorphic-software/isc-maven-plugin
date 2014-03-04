@@ -194,7 +194,7 @@ public abstract class AbstractPackagerMojo extends AbstractMojo {
      * 
      * @since 1.0.0
      */
-	@Parameter(property="workdir",defaultValue="${java.io.tmpdir}${project.artifactId}")
+	@Parameter(property="workdir",defaultValue="${java.io.tmpdir}/${project.artifactId}")
 	protected File workdir;
 
 	/**
