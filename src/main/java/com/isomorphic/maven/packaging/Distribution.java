@@ -75,18 +75,23 @@ public final class Distribution {
 	
 	//ant-style wildcards used at extraction for filtering the distribution for the JARs to be included 
 	private static final String JAR_INCLUDES = "**/isc-*.jar, **/isomorphic_*.jar, **/smartgwt-*.jar";
-	private static final String JAR_EXCLUDES = "**/samples/**, **/*examples.jar, **/*tomcat.jar, **/*isomorphic_web_services.jar";
+	private static final String JAR_EXCLUDES = "**/samples/**, **/*examples.jar, **/*tomcat.jar, **/*isomorphic_web_services.jar, **/isomorphic_applets.jar";
 	
 	//the following ant patterns currently yield files that are deliberately renamed (see static initialization block) - exclude them as well
 	private static final String JAR_CONFLICTS = "**/smartgwtee.jar, **/isc-jakarta-oro*.jar, **/isomorphic_realtime_messaging.jar";		
 	
 	//ant-style wildcards used at extraction for filtering the distribution for the POMs to be included
-	private static final String POM_CLIENT = "**/smartgwt-skins.pom, **/smartgwt-analytics.pom, **/smartgwt-messaging.pom";
-	private static final String POM_SERVER = "**/isc-*.pom, **/isomorphic-*.pom, **/isomorphic-*.xml, **/dependencygroup-*.xml";
-	private static final String POM_SHARED = "**/isc-*-resources.pom";
+	private static final String POM_SMARTCLIENT = "**/smartclient-*resources.pom, **/smartclient-tools.xml, **/smartclient-messaging.xml, **/smartclient-analytics.xml";
+	private static final String POM_SMARTGWT = "**/smartgwt-skins.pom, **/smartgwt-analytics.pom, **/smartgwt-messaging.pom";
+	private static final String POM_SERVER = "**/isomorphic-*.pom, **/isomorphic-*.xml, **/dependencygroup-*.xml";
+	private static final String POM_SHARED = "**/isc-*.pom, **/isc-*.xml";
 
 	//ant-style wildcards used at extraction for filtering the distribution for Selenium support resources
-	private static final String SELENIUM_INCLUDES = "**/selenium/**,**/batchReport.template";
+	private static final String SELENIUM_INCLUDES = "**/selenium/**, **/batchReport.template";
+
+	private static final String SMARTCLIENT_RUNTIME_INCLUDES = "**/smartclientRuntime/isomorphic/**, **/smartclientRuntime/WEB-INF/classes/**, **/smartclientRuntime/WEB-INF/iscTaglib.xml";
+	private static final String SMARTCLIENT_SDK_INCLUDES = "**/smartclientSDK/tools/**";
+	private static final String SMARTCLIENT_SDK_EXCLUDES = "**/dsBrowser.jsp,**/classBrowser.jsp,**/sqlBrowser.jsp,**/maven/**";
 	
 	//ant-style wildcards used at extraction for filtering the distribution for javadoc documentation resources
 	private static final String SMARTCLIENT_JAVADOC = "**/smartclientSDK/isomorphic/system/reference/server/javadoc/**";
@@ -164,17 +169,28 @@ public final class Distribution {
 		Distribution distribution = new Distribution();
 		distribution.include(links);
 
-		//smartclient downloads currently include smartgwt poms.  ignore when inapplicable 
+		//e.g., smartclient downloads currently include smartgwt poms and vice-versa.  ignore when inapplicable 
 		List<String> pomIncludes = new ArrayList<String>();
-		if (product == SMARTGWT) {
-			pomIncludes.add(POM_CLIENT);
-			pomIncludes.add("**/smartgwt-" + license.name().toLowerCase() + ".pom");
+		if (product == SMARTCLIENT) {
+			pomIncludes.add(POM_SMARTCLIENT);
+			distribution
+				.contents("sdk/#smartclientSDK", "**/smartclientSDK/**", SMARTCLIENT_SDK_EXCLUDES)
+				.contents("assembly/smartclient-resources/#smartclientRuntime", SMARTCLIENT_RUNTIME_INCLUDES, null)
+				.contents("assembly/smartclient-analytics-resources/isomorphic/system/modules", "ISC_Analytics*,ISC_Drawing*", null)
+				.contents("assembly/smartclient-analytics-resources/isomorphic/system/modules-debug", "modules-debug/ISC_Analytics*,modules-debug/ISC_Drawing*", null)
+				.contents("assembly/smartclient-messaging-resources/isomorphic/system/modules", "ISC_RealtimeMessaging*", null)
+				.contents("assembly/smartclient-messaging-resources/isomorphic/system/modules-debug", "modules-debug/ISC_RealtimeMessaging*", null)
+				.contents("assembly/smartclient-tools-resources/#smartclientSDK", SMARTCLIENT_SDK_INCLUDES, SMARTCLIENT_SDK_EXCLUDES);
+		} else if (product == SMARTGWT) {
+			pomIncludes.add(POM_SMARTGWT);
 		}
+		pomIncludes.add("**/" + product.getName() + "-" + license.getName() + "*");
+		pomIncludes.add(POM_SHARED);
+		
 		//similarly lgpl includes server framework poms.  ignore
 		if (license != LGPL) {
 			pomIncludes.add(POM_SERVER);
 		}
-		pomIncludes.add(POM_SHARED);
 
 		/*
 		 * Map the relevant sdk resources to their paths as they should be when extracted.
@@ -184,14 +200,18 @@ public final class Distribution {
 		distribution
 			.contents("pom", Joiner.on(",").join(pomIncludes), null)
 			.contents("doc/user", DOC_INCLUDES, DOC_EXCLUDES)
-			.contents("assembly/selenium-resources", SELENIUM_INCLUDES, null)
 			.contents("doc/api/client/#javadoc", SMARTGWT_CLIENT_JAVADOC, null)
 			.contents("doc/api/server/#javadoc", product == SMARTGWT ? SMARTGWT_SERVER_JAVADOC : SMARTCLIENT_JAVADOC, null)
 			.contents("lib", JAR_INCLUDES, JAR_EXCLUDES + ", " + JAR_CONFLICTS)
 			.contents("lib/isc-jakarta-oro.jar", "**/isc-jakarta-oro*.jar", null)
 			.contents("lib/smartgwt-analytics.jar", "**/analytics.jar", null)
 			.contents("lib/smartgwt-messaging.jar", "**/messaging.jar", null)
-			.contents("lib/isomorphic-messaging.jar", "**/isomorphic_realtime_messaging.jar", null);
+			.contents("lib/isomorphic-messaging.jar", "**/isomorphic_realtime_messaging.jar", null)
+			.contents("assembly/isc-selenium-resources", SELENIUM_INCLUDES, null);
+
+		if (license == EVAL || license == POWER || license == ENTERPRISE) {
+			distribution.contents("assembly/isc-batchuploader-resources/ds", "**/batchUpload.ds.xml", null);
+		}
 		
 		DISTRIBUTIONS.put(product, license, distribution);
 		return distribution;
@@ -406,7 +426,7 @@ public final class Distribution {
 		for (File assembly : assemblies) {
 			String name = FilenameUtils.getBaseName(assembly.getName());
 			LOGGER.debug("Copying resources for assembly '{}'", name);
-			ArchiveUtils.zip(assembly, FileUtils.getFile(assembliesDir, "isc-" + name + ".zip"));
+			ArchiveUtils.zip(assembly, FileUtils.getFile(assembliesDir, name + ".zip"));
 			FileUtils.deleteQuietly(assembly);
 		}
 

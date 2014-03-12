@@ -29,21 +29,34 @@ public enum License {
 	LGPL("LGPL"),
 	EVAL("Eval"),
 	PRO("Pro"),
-	POWER("PowerEdition"),
+	POWER("PowerEdition", "power"),
 	ENTERPRISE("Enterprise"),
 	
-	ANALYTICS_MODULE("AnalyticsModule"),
-	MESSAGING_MODULE("RealtimeMessagingModule");
+	ANALYTICS_MODULE("AnalyticsModule", "analytics"),
+	MESSAGING_MODULE("RealtimeMessagingModule", "messaging");
 
-	String display;
+	String label;
+	String name;
 	
-	private License(String display) {
-		this.display = display;
+	private License(String label) {
+		this(label, label);
+	}
+	
+	private License(String label, String name) {
+		this.label = label;
+		this.name = name.toLowerCase();
 	}
 
 	@Override
 	public String toString() {
-		return display;
+		return getLabel();
 	}
 	
+	public String getLabel() {
+		return label;
+	}
+	
+	public String getName() {
+		return name;
+	}
 }

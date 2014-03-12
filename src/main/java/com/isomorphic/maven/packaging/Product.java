@@ -28,15 +28,30 @@ public enum Product {
 	SMARTGWT("SmartGWT"),	
 	SMARTGWT_MOBILE("SmartGWT.mobile");
 	
-	private String display;
+	private String label;
+	private String name;
 	
-	private Product(String display) {
-		this.display = display;
+	private Product(String label) {
+		this(label, label);
+	}
+	
+	private Product(String label, String name) {
+		this.label = label;
+		this.name = name.toLowerCase();
 	}
 	
 	@Override
 	public String toString() {
-		return display;
+		return getLabel();
 	}
+	
+	public String getLabel() {
+		return label;
+	}
+	
+	public String getName() {
+		return name;
+	}
+	
 
 }

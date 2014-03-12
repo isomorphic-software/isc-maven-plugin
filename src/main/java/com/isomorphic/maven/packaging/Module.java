@@ -59,8 +59,7 @@ public class Module extends AbstractArtifact implements Comparable<Module> {
 		groupId = model.getGroupId();
 		version = model.getVersion();
 		
-		String fileExtension = FilenameUtils.getExtension(file.getName());
-		extension = fileExtension.equalsIgnoreCase("xml") ? "pom" : fileExtension;
+		extension = model.getPackaging().toLowerCase();
 
 		if (! extension.equals("pom") && model.getPomFile() != null) {
 			attach(model.getPomFile(), null);
