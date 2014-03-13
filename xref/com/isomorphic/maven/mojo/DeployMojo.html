@@ -107,7 +107,7 @@
 <a class="jxr_linenumber" name="97" href="#97">97</a>  		Authentication authentication = getAuthentication(repositoryId);
 <a class="jxr_linenumber" name="98" href="#98">98</a>      	builder.setAuthentication(authentication);
 <a class="jxr_linenumber" name="99" href="#99">99</a>  
-<a class="jxr_linenumber" name="100" href="#100">100</a>     	LOGGER.info(<span class="jxr_string">"Deploying to repositoryId '{}' with credentials: {}"</span>, repositoryId, authentication.toString());
+<a class="jxr_linenumber" name="100" href="#100">100</a>     	LOGGER.info(<span class="jxr_string">"Deploying to repositoryId '{}' with credentials: {}"</span>, repositoryId, authentication == <strong class="jxr_keyword">null</strong> ? <strong class="jxr_keyword">null</strong> : authentication.toString());
 <a class="jxr_linenumber" name="101" href="#101">101</a>     	
 <a class="jxr_linenumber" name="102" href="#102">102</a>     	RemoteRepository repository = builder.build();
 <a class="jxr_linenumber" name="103" href="#103">103</a> 		
