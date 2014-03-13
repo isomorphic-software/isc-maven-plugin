@@ -404,6 +404,11 @@ public final class Distribution {
 						File target = FileUtils.getFile(to, ArchiveUtils.rewritePath(entry.getName(), filterEntry.getKey()));
 						FileUtils.copyInputStreamToFile(zip.getInputStream(entry), target);
 						LOGGER.debug("Copied input stream to file '{}'", target.getAbsolutePath());
+						
+						if (FilenameUtils.isExtension(target.getName(), new String[] {"bat", "sh", "command"})) {
+							target.setExecutable(true);
+							LOGGER.debug("Enabled execute permissions on file '{}'", target.getAbsolutePath());
+						}
 					}	
 				}
 			}
