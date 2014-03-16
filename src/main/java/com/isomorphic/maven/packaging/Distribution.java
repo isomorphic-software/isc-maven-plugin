@@ -41,8 +41,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
@@ -404,11 +402,6 @@ public final class Distribution {
 						File target = FileUtils.getFile(to, ArchiveUtils.rewritePath(entry.getName(), filterEntry.getKey()));
 						FileUtils.copyInputStreamToFile(zip.getInputStream(entry), target);
 						LOGGER.debug("Copied input stream to file '{}'", target.getAbsolutePath());
-						
-						if (FilenameUtils.isExtension(target.getName(), new String[] {"bat", "sh", "command"})) {
-							target.setExecutable(true);
-							LOGGER.debug("Enabled execute permissions on file '{}'", target.getAbsolutePath());
-						}
 					}	
 				}
 			}

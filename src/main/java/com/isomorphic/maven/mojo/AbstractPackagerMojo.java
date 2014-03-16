@@ -285,7 +285,14 @@ public abstract class AbstractPackagerMojo extends AbstractMojo {
 		} catch (IOException e) {
 			throw new MojoFailureException("Unable to copy distribution contents", e);
 		}
-		
+
+		String[] executables = {"bat", "sh", "command"};
+		Collection<File> scripts = FileUtils.listFiles(basedir, executables, true);
+		scripts.addAll(FileUtils.listFiles(bookmarkable, executables, true));
+		for (File script : scripts) {
+			script.setExecutable(true);
+			LOGGER.debug("Enabled execute permissions on file '{}'", script.getAbsolutePath());
+		}		
 		doExecute(artifacts);
 	
 	}
