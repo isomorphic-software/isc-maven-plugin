@@ -19,35 +19,58 @@
 
 <project xmlns="http://maven.apache.org/DECORATION/1.4.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://maven.apache.org/DECORATION/1.4.0 http://maven.apache.org/xsd/decoration-1.4.0.xsd"
-  name="Isomorphic Maven Plugin">
+  name="Isomorphic Software Maven Plugin">
 
     <skin>
-        <groupId>org.apache.maven.skins</groupId>
-        <artifactId>maven-fluido-skin</artifactId>
-        <version>1.3.0</version>
+	    <groupId>lt.velykis.maven.skins</groupId>
+	    <artifactId>reflow-maven-skin</artifactId>
+	    <version>1.1.0</version>
     </skin>
+	<custom>
+	    <reflowSkin>
+            <theme>bootswatch-flatly</theme>
+			<brand>
+			    <name>${project.artifactId}</name>
+			    <href>/index.html</href>
+			</brand>
+			<bottomNav maxSpan="8">
+			    <column>Documentation</column>
+			    <column>Examples</column>
+			</bottomNav>
+			<bottomDescription>
+			     <![CDATA[
+				 <p class="text-info pull-right"></p>
+				 ]]>
+			</bottomDescription>
+        </reflowSkin>
+	</custom>
 
     <body>
-        <menu name="Overview">
-            <item name="Introduction" href="index.html"/>
+    
+        <menu name="Documentation">
+            <item name="Overview" href="index.html"/>
             <item name="Usage" href="usage.html"/>
-            <item name="Goals" href="plugin-info.html"/>
             <item name="FAQ" href="faq.html"/>
+            <item name="Artifacts" href="artifacts.html"/>            
+            <item name="Project Reports" href="project-reports.html" />
+            <item name="Project Information" href="project-info.html"/>
         </menu>
 
         <menu name="Examples">
             <item name="Configuration / Settings" href="examples/configuration.html"/>
-            <item name="Install local distribution" href="examples/skip-download.html"/>
-            <item name="Example POM" href="examples/example-pom.html"/>
+            <item name="Sample project POMs" href="examples/example-pom.html"/>
+            <item name="Install From Local Distribution" href="examples/skip-download.html"/>
         </menu>
-   
-        <menu ref="reports"/>
-       
-        <links>
-            <item name="Isomorphic Wiki" href="http://isomorphic.atlassian.net/wiki/display/Main/Using+Maven+with+SmartGWT" target="_blank" />
-            <item name="Current Builds" href="http://www.smartclient.com/builds/" target="_blank" />
-        </links>
-  
+        
+        <menu name="Links">
+            <item name="GitHub Repository" href="https://github.com/isomorphic-software/isc-maven-plugin/" />
+            <item name="Issues" href="https://github.com/isomorphic-software/isc-maven-plugin/issues" />
+            <item name="Current Builds" href="http://www.smartclient.com/builds/" />
+            <item name="Isomorphic Public Wiki" href="http://isomorphic.atlassian.net/wiki/display/Main/Using+Maven" />
+            <item name="Reflow Maven skin by Andrius Velykis" href="http://github.com/andriusvelykis/reflow-maven-skin"/>
+            <item name="Bootswatch: Flatly theme by Jenil Gogari" href="http://bootswatch.com/2/flatly/"/>
+        </menu>
+
     </body>
     
 </project>
