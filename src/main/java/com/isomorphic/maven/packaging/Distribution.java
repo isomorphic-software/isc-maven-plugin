@@ -173,11 +173,13 @@ public final class Distribution {
 			pomIncludes.add(POM_SMARTCLIENT);
 			distribution
 				.contents("sdk/#smartclientSDK", "**/smartclientSDK/**", SMARTCLIENT_SDK_EXCLUDES)
-				.contents("assembly/smartclient-resources/#smartclientRuntime", SMARTCLIENT_RUNTIME_INCLUDES, null)
-				.contents("assembly/smartclient-analytics-resources/isomorphic/system/modules", "ISC_Analytics*,ISC_Drawing*", null)
-				.contents("assembly/smartclient-analytics-resources/isomorphic/system/modules-debug", "modules-debug/ISC_Analytics*,modules-debug/ISC_Drawing*", null)
-				.contents("assembly/smartclient-messaging-resources/isomorphic/system/modules", "ISC_RealtimeMessaging*", null)
-				.contents("assembly/smartclient-messaging-resources/isomorphic/system/modules-debug", "modules-debug/ISC_RealtimeMessaging*", null)
+				//exclude optional modules bundled with eval, and instead allow them to be repackaged in assemblies, as they would normally be (leave development copies of RTM in place for the dev console)
+				.contents("assembly/smartclient-resources/#smartclientRuntime", SMARTCLIENT_RUNTIME_INCLUDES, "**/ISC_Analytics*,**/modules*/ISC_RealtimeMessaging*")
+				//unfortunately, they're dropped on the root in optional download, modules directory in eval - use more specific source and target patterns to get the right file in the right place
+				.contents("assembly/smartclient-analytics-resources/isomorphic/system/modules", "ISC_Analytics*,**/modules/ISC_Analytics*", null)
+				.contents("assembly/smartclient-analytics-resources/isomorphic/system/modules-debug", "**/modules-debug/ISC_Analytics*", null)
+				.contents("assembly/smartclient-messaging-resources/isomorphic/system/modules", "ISC_RealtimeMessaging*,**/modules/ISC_RealtimeMessaging*", null)
+				.contents("assembly/smartclient-messaging-resources/isomorphic/system/modules-debug", "**/modules-debug/ISC_RealtimeMessaging*", null)
 				.contents("assembly/smartclient-tools-resources/#smartclientSDK", SMARTCLIENT_SDK_INCLUDES, SMARTCLIENT_SDK_EXCLUDES);
 		} else if (product == SMARTGWT) {
 			pomIncludes.add(POM_SMARTGWT);
