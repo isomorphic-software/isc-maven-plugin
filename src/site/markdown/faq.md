@@ -23,7 +23,7 @@
 
 2. __Which dependencies do I need for my project?__
 
-    Users of SmartClient or SmartGWT LGPL editions only get 
+    Users of SmartGWT or SmartClient LGPL editions only get 
 
         com.isomorphic.smartgwt.lgpl:smartgwt-lgpl
     
