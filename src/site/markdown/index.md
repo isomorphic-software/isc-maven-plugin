@@ -27,7 +27,7 @@ This plugin, based on work done previously in a user-contributed [google code pl
 
 * Download and extraction of all distributions you're entitled to under your Isomorphic license agreement (i.e., any optional modules are downloaded for you in the same step)
 
-* Extraction of only the most important SDK resources (e.g., documentation, [selenium extensions](http://www.smartclient.com/smartgwtee-latest/javadoc/com/smartgwt/client/docs/UsingSelenium.html) into a 'latest' folder, suitable for bookmarking. 
+* Extraction of select SDK resources (e.g., documentation, [selenium extensions](http://www.smartclient.com/smartgwtee-latest/javadoc/com/smartgwt/client/docs/UsingSelenium.html) into a 'latest' folder, suitable for bookmarking. 
 
 * Translation from traditional Isomorphic conventions to Maven standards for naming, versioning, etc.
 
