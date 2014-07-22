@@ -21,7 +21,11 @@
 
     This indicates that the zip file is somehow corrupt, as can happen when an execution is interrupted.  Just run the goal again, providing a 'true' value to the [overwrite](./apidocs/com/isomorphic/maven/mojo/AbstractPackagerMojo.html#overwrite) property.
 
-2. __Which dependencies do I need for my project?__
+2. __Does your plugin detect and use proxy settings?__
+
+    Yes, the plugin should respect your (active) [Maven proxy settings](http://maven.apache.org/guides/mini/guide-proxies.html).
+
+3. __Which dependencies do I need for my project?__
 
     Users of SmartGWT or SmartClient LGPL editions only get 
 
