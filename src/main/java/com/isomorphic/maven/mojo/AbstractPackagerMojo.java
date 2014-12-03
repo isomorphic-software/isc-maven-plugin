@@ -31,10 +31,8 @@ import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Date;
 import java.util.List;
 import java.util.Set;
-import java.util.TimeZone;
 import java.util.TreeSet;
 
 import org.apache.commons.io.FileUtils;
@@ -43,6 +41,7 @@ import org.apache.commons.io.filefilter.FileFilterUtils;
 import org.apache.commons.io.filefilter.IOFileFilter;
 import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.apache.commons.io.filefilter.WildcardFileFilter;
+import org.apache.commons.lang3.StringUtils;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.building.DefaultModelBuildingRequest;
@@ -97,8 +96,12 @@ public abstract class AbstractPackagerMojo extends AbstractMojo {
      * href
      * ="http://www.smartclient.com/builds/">http://www.smartclient.com/builds
      * /</a>, in yyyy-MM-dd format. e.g., 2013-25-12. Used to determine both
-     * remote and local file locations. <br/>
-     * <b>Default value is</b>: <tt>The current date</tt>.
+     * remote and local file locations. 
+     * <br/>
+     * Note that if no value is provided, an attempt is made to discover the date of the
+     * latest distribution currently published to the Isomorphic build server.
+     * <br/>
+     * <b>Default value is</b>: <tt>The date of the most recent distribution</tt>.
      * 
      * @since 1.0.0
      */
@@ -266,11 +269,50 @@ public abstract class AbstractPackagerMojo extends AbstractMojo {
      */
     public void execute() throws MojoExecutionException, MojoFailureException {
 
+        Server server = settings.getServer(serverId);
+        String username = null;
+        String password = null;
+        if (server != null) {
+            username = server.getUsername();
+            password = server.getPassword();
+        } else {
+            LOGGER.warn("No server configured with id '{}'.  Will be unable to authenticate.",
+                serverId);
+        }
+        
+        // allow execution to proceed without login credentials - it may be that
+        // they're not required
+        UsernamePasswordCredentials credentials = null;
+        if (username != null) {
+            credentials = new UsernamePasswordCredentials(username, password);
+        }
+        
+        String buildNumberFormat = "\\d.*\\.\\d.*[d|p]";
+        if (!buildNumber.matches(buildNumberFormat)) {
+            throw new MojoExecutionException(String.format(
+                "buildNumber '%s' must take the form [major].[minor].[d|p].  e.g., 4.1d",
+                buildNumber, buildNumberFormat));
+        }
+
         SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-        dateFormat.setTimeZone(TimeZone.getTimeZone("America/Los_Angeles"));
         dateFormat.setLenient(false);
         if (buildDate == null) {
-            buildDate = dateFormat.format(new Date());
+            Distribution d = Distribution.get(product, license);
+            Downloads dl = new Downloads(credentials);
+            
+            LOGGER.info("No buildDate provided.  Contacting Isomorphic build server to "
+                + "look for the most recent distribution...");
+            
+            String link = dl.findCurrentBuild(d, buildNumber);
+            
+            if (link == null) {
+                throw new MojoExecutionException("No build found for the given distribution.");
+            }
+
+            LOGGER.debug("Extracting date from server response: '{}'", link);
+            
+            buildDate = StringUtils.substringAfterLast(link, "/");
+
         }
         try {
             dateFormat.parse(buildDate);
@@ -280,14 +322,7 @@ public abstract class AbstractPackagerMojo extends AbstractMojo {
         }
 
         LOGGER.debug("buildDate set to '{}'", buildDate);
-
-        String buildNumberFormat = "\\d.*\\.\\d.*[d|p]";
-        if (!buildNumber.matches(buildNumberFormat)) {
-            throw new MojoExecutionException(String.format(
-                "buildNumber '%s' must take the form [major].[minor].[d|p].  e.g., 4.1d",
-                buildNumber, buildNumberFormat));
-        }
-
+        
         File basedir = FileUtils.getFile(workdir, product.toString(), license.toString(),
             buildNumber, buildDate);
 
@@ -303,9 +338,8 @@ public abstract class AbstractPackagerMojo extends AbstractMojo {
             }
         }
 
-        // collect the maven artifacts and send them along to the abstract
-        // method
-        Set<Module> artifacts = collect(licenses, basedir);
+        // collect the maven artifacts and send them along to the abstract method
+        Set<Module> artifacts = collect(credentials, licenses, basedir);
 
         File bookmarkable = new File(basedir.getParent(), "latest");
         LOGGER.info("Copying distribution to '{}'", bookmarkable.getAbsolutePath());
@@ -349,26 +383,8 @@ public abstract class AbstractPackagerMojo extends AbstractMojo {
      * @throws MojoExecutionException
      *             When any fatal error occurs.
      */
-    private Set<Module> collect(List<License> downloads, File basedir)
+    private Set<Module> collect(UsernamePasswordCredentials credentials, List<License> downloads, File basedir)
         throws MojoExecutionException {
-
-        // allow execution to proceed without login credentials - it may be that
-        // they're not required
-        Server server = settings.getServer(serverId);
-        String username = null;
-        String password = null;
-        if (server != null) {
-            username = server.getUsername();
-            password = server.getPassword();
-        } else {
-            LOGGER.warn("No server configured with id '{}'.  Will be unable to authenticate.",
-                serverId);
-        }
-
-        UsernamePasswordCredentials credentials = null;
-        if (username != null) {
-            credentials = new UsernamePasswordCredentials(username, password);
-        }
 
         File downloadTo = new File(basedir, "zip");
         downloadTo.mkdirs();
@@ -387,8 +403,7 @@ public abstract class AbstractPackagerMojo extends AbstractMojo {
             } else if (existing != null) {
                 LOGGER.info("Creating local distribution from '{}'",
                     downloadTo.getAbsolutePath());
-                Distribution distribution = Distribution.get(product, license, buildNumber,
-                    buildDate);
+                Distribution distribution = Distribution.get(product, license);
                 distribution.getFiles().addAll(Arrays.asList(existing));
                 distributions.add(distribution);
             }

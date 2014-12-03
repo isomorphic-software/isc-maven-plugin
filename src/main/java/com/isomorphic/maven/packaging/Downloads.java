@@ -27,7 +27,6 @@ import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.List;
 
-import com.isomorphic.maven.util.LoggingCountingOutputStream;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
@@ -54,6 +53,8 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import com.isomorphic.maven.util.LoggingCountingOutputStream;
 
 /**
  * Connects to Isomorphic site, discovers which files exist for a given build, and downloads them 
@@ -138,8 +139,8 @@ public class Downloads {
 			List<Distribution> result = new ArrayList<Distribution>();
 			
 			for (License license : licenses) {
-				Distribution distribution = Distribution.get(product, license, buildNumber, buildDate);
-				download(distribution);
+				Distribution distribution = Distribution.get(product, license);
+				download(distribution, buildNumber, buildDate);
 				result.add(distribution);
 			}
 			logout();
@@ -149,8 +150,31 @@ public class Downloads {
 		} finally {
 	        httpClient.getConnectionManager().shutdown();
 	    }
-
 	}
+
+	public String findCurrentBuild(Distribution distribution, String buildNumber) throws MojoExecutionException {
+
+        try {
+            setup();
+            login();
+            
+            String url = distribution.getRemoteIndex(buildNumber, null);
+            String selector = "a[href~=[0-9]{4}-[0-9]{2}-[0-9]{2}]";
+            
+            String[] links = list(url, selector);
+            
+            logout();
+
+            if (links.length > 0) {
+                return links[links.length-1];
+            } else {
+                return null;
+            }
+            
+        } finally {
+            httpClient.getConnectionManager().shutdown();
+        }
+    }
 	
 	/**
 	 * Obtains a list of hyperlinks, downloads the file/s represented by each, and links it/them to the given distribution.
@@ -158,10 +182,13 @@ public class Downloads {
 	 * @param distribution
 	 * @throws MojoExecutionException
 	 */
-	private void download (Distribution distribution) throws MojoExecutionException {
+	private void download (Distribution distribution, String buildNumber, String buildDate) throws MojoExecutionException {
 
-		String[] links = list(distribution);
+	    String url = distribution.getRemoteIndex(buildNumber, buildDate);
+        String selector = distribution.getRemoteIndexFilter();
 		
+        String[] links = list(url, selector);
+        
 		for (String link : links) {
 		
 			String filename = FilenameUtils.getName(link);
@@ -212,14 +239,14 @@ public class Downloads {
 	 * @return a String array of html href attributes
 	 * @throws MojoExecutionException
 	 */
-	private String[] list(Distribution dist) throws MojoExecutionException {
+	private String[] list(String url, String selector) throws MojoExecutionException {
 		
-		HttpGet request = new HttpGet(dist.getRemoteIndex());
+		HttpGet request = new HttpGet(url);
 		HttpResponse response;
 		
 		try {
 		
-			LOGGER.debug("Requesting list of files from {}{}", DOMAIN, dist.getRemoteIndex());
+			LOGGER.debug("Requesting list of files from {}{}", DOMAIN, url);
 			response = httpClient.execute(host, request);
 		
 		} catch (Exception e) {
@@ -240,7 +267,7 @@ public class Downloads {
 
 		List<String> result = new ArrayList<String>(); 
 		
-		Elements links = doc.select(dist.getRemoteIndexFilter());
+		Elements links = doc.select(selector);
 
 		for (Element element : links) {
 			String href = element.attr("href");
@@ -248,7 +275,7 @@ public class Downloads {
 		}
 		
 		if (result.isEmpty()) {
-			String msg = String.format("No downloads found at '%s%s'.  Response from server: \n\n%s\n", DOMAIN, dist.getRemoteIndex(), doc.html());
+			String msg = String.format("No downloads found at '%s%s'.  Response from server: \n\n%s\n", DOMAIN, url, doc.html());
 			LOGGER.warn(msg);
 		}
 		
@@ -271,7 +298,7 @@ public class Downloads {
 		String username = credentials.getUserName();
 		String password = credentials.getPassword();
 		
-		LOGGER.info("Authenticating to '{}' with username: '{}'", DOMAIN + LOGIN_URL, username);
+		LOGGER.debug("Authenticating to '{}' with username: '{}'", DOMAIN + LOGIN_URL, username);
 		
         HttpPost login = new HttpPost(LOGIN_URL);
 
@@ -296,7 +323,7 @@ public class Downloads {
 	 */
 	private void logout() {
         HttpPost logout = new HttpPost(LOGOUT_URL);
-        LOGGER.info("Logging off at '{}'", DOMAIN + LOGOUT_URL);
+        LOGGER.debug("Logging off at '{}'", DOMAIN + LOGOUT_URL);
         try {
 	        HttpResponse response = httpClient.execute(host, logout);
 	        EntityUtils.consume(response.getEntity());

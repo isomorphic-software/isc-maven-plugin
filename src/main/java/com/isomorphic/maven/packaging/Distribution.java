@@ -46,6 +46,7 @@ import java.util.zip.ZipFile;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.util.CollectionUtils;
@@ -164,7 +165,8 @@ public final class Distribution {
 	 */
 	private static Distribution create(Product product, License license, String... links) {
 		
-		Distribution distribution = new Distribution();
+		Distribution distribution = new Distribution(product, license);
+	
 		distribution.include(links);
 
 		//e.g., smartclient downloads currently include smartgwt poms and vice-versa.  ignore when inapplicable 
@@ -228,12 +230,13 @@ public final class Distribution {
 	 * @return The fully-prepared Distribution instance, suitable for downloading and/or manipulating SDK bundles and their contents
 	 * @throws IllegalArgumentException when no instance is found for the given Product, License combination
 	 */
-	public static Distribution get(Product product, License license, String version, String date) {
+	public static Distribution get(Product product, License license) {
 		Distribution result = DISTRIBUTIONS.get(product, license);
 		if (result == null) {
 			throw new IllegalArgumentException("Unknown distribution for product " + product + " and license " + license + ".");
 		}
 		//determine the location of the distribution by replacing url tokens with provided values 
+		/*
 		String url = result.getRemoteIndex()
 			.replaceAll("#product", product.toString())
 			.replaceAll("#version", version)
@@ -241,19 +244,28 @@ public final class Distribution {
 			.replaceAll("#date", date);
 
 		result.setRemoteIndex(url);
+		*/
+		
 		return result;
-	} 	
+	}	
+
+    Product product;
+    License license;
 	
-	//a string representing a relative url from which a given distribution may be downloaded 
-	private String remoteIndex = "/builds/#product/#version/#license/#date/";	
+    //a string representing a relative url from which a given distribution may be downloaded 
+	private String remoteIndex = "/builds/#product/#version/#license/#date";	
 	private List<String> selectors = new ArrayList<String>();
 	private Map<String, AntPathMatcherFilter> content = new HashMap<String, AntPathMatcherFilter>();
 	private Set<File> files = new HashSet<File>();
 	
 	/**
 	 * Private constructor, in the singleton style.
+	 * @param product 
+	 * @param license 
 	 */
-	private Distribution() {
+	private Distribution(Product product, License license) {
+	    this.product = product;
+	    this.license = license;
 	}
 	
 	/**
@@ -338,17 +350,14 @@ public final class Distribution {
 	 * 
 	 * @return the URL representing the location of the distribution's "remote index", or download page.
 	 */
-	protected String getRemoteIndex() {
-		return remoteIndex;
-	}
-	
-	/**
-	 * Sets url the URL representing the location of the distribution's "remote index", or download page.
-	 * @param url the URL representing the location of the distribution's "remote index", or download page.
-	 */
-	private void setRemoteIndex(String url) {
-		remoteIndex = url;
-	}
+	protected String getRemoteIndex(String buildNumber, String buildDate) {
+	    
+	    return remoteIndex
+	        .replaceAll("#product", product.toString())
+	        .replaceAll("#version", StringUtils.defaultString(buildNumber))
+	        .replaceAll("#license", license.toString())
+	        .replaceAll("#date", StringUtils.defaultString(buildDate));
+	}	
 	
 	/**
 	 * Returns a comma-separated list of all the {@link #selectors} that should be used to determine which 
