@@ -2,9 +2,9 @@
 
 The archives available on the Isomorphic Software [builds page](http://www.smartclient.com/builds) contain everything you need to write applications using SmartClient / SmartGWT.
 
-The download, install, and deploy goals of this plugin repackage some these resources to facilitate or simplify usage with Maven.  In some cases, a file is just renamed to more closely align with popular conventions for Maven artifacts.  In other cases, existing resources are repackaged to create an entirely new supplemental artifact. 
+The download, install, and deploy goals of this plugin repackage some these resources to facilitate or simplify usage with Maven.  In some cases, a file is just renamed to more closely align with popular conventions for Maven artifacts.  In other cases, existing resources are repackaged to create an entirely new supplemental artifact.   Your build's documentation includes the artifacts available under your license, but the Isomorphic site hosts listings for the latest build of both both [SmartClient](http://www.smartclient.com/smartclient-latest/isomorphic/system/reference/mavendoc/maven-usage.html) and [SmartGWT](https://www.smartclient.com/smartgwtee-latest/javadoc/mavendoc/maven-usage.html) Evaluation editions.
 
-Each artifact's POM contains a description outlining what it's for, and in many cases includes a link to documentation, but in general terms there are at least 4 kinds of supplemental artifacts.  
+Each artifact's POM contains a description outlining what it's for, and in many cases includes a link to more documentation, but in general terms there are at least 4 kinds of supplemental artifacts.  
 
 ---
 
