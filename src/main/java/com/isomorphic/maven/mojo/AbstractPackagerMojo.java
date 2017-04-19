@@ -57,6 +57,10 @@ import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
 import org.apache.maven.settings.Server;
 import org.apache.maven.settings.Settings;
+import org.apache.maven.settings.crypto.DefaultSettingsDecryptionRequest;
+import org.apache.maven.settings.crypto.SettingsDecrypter;
+import org.apache.maven.settings.crypto.SettingsDecryptionRequest;
+import org.apache.maven.settings.crypto.SettingsDecryptionResult;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
 import org.slf4j.Logger;
@@ -241,6 +245,9 @@ public abstract class AbstractPackagerMojo extends AbstractMojo {
     @Component
     protected Settings settings;
 
+	@Component 
+    private SettingsDecrypter settingsDecrypter; 
+    
     /**
      * The point where a subclass is able to manipulate the collection of
      * artifacts prepared for it by this object's {@link #execute()} method.
@@ -269,7 +276,7 @@ public abstract class AbstractPackagerMojo extends AbstractMojo {
      */
     public void execute() throws MojoExecutionException, MojoFailureException {
 
-        Server server = settings.getServer(serverId);
+        Server server = getDecryptedServer(serverId);
         String username = null;
         String password = null;
         if (server != null) {
@@ -313,6 +320,8 @@ public abstract class AbstractPackagerMojo extends AbstractMojo {
             
             buildDate = StringUtils.substringAfterLast(link, "/");
 
+            LOGGER.info("buildDate set to '{}'", buildDate);
+            
         }
         try {
             dateFormat.parse(buildDate);
@@ -320,8 +329,6 @@ public abstract class AbstractPackagerMojo extends AbstractMojo {
             throw new MojoExecutionException(String.format(
                 "buildDate '%s' must take the form yyyy-MM-dd.", buildDate));
         }
-
-        LOGGER.debug("buildDate set to '{}'", buildDate);
         
         File basedir = FileUtils.getFile(workdir, product.toString(), license.toString(),
             buildNumber, buildDate);
@@ -534,4 +541,26 @@ public abstract class AbstractPackagerMojo extends AbstractMojo {
         return result.getEffectiveModel();
     }
 
+	/**
+	 * Decrypt settings and return the server element with the given id.  Useful for e.g., reading encrypted 
+	 * user credentials.
+	 * 
+	 * @param id the id of the server to be decrypted
+	 * @return a Server with its protected elements decrypted, if one is found with the given id.  Null otherwise.
+	 * 
+	 * @see http://maven.apache.org/guides/mini/guide-encryption.html
+	 */
+    protected Server getDecryptedServer(String id) { 
+        final SettingsDecryptionRequest settingsDecryptionRequest = new DefaultSettingsDecryptionRequest(); 
+        settingsDecryptionRequest.setServers(settings.getServers()); 
+        final SettingsDecryptionResult decrypt = settingsDecrypter.decrypt(settingsDecryptionRequest); 
+        List<Server> servers = decrypt.getServers();
+        
+        for (Server server : servers) {
+        	if (server.getId().equals(id)) {
+        		return server;
+        	}
+        }
+        return null;
+    } 
 }

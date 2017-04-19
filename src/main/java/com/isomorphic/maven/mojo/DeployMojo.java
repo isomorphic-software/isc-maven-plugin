@@ -1,37 +1,12 @@
 package com.isomorphic.maven.mojo;
 
-/*
- * Licensed to the Apache Software Foundation (ASF) under one
- * or more contributor license agreements.  See the NOTICE file
- * distributed with this work for additional information
- * regarding copyright ownership.  The ASF licenses this file
- * to you under the Apache License, Version 2.0 (the
- * "License"); you may not use this file except in compliance
- * with the License.  You may obtain a copy of the License at
- *
- *  http://www.apache.org/licenses/LICENSE-2.0
- *
- * Unless required by applicable law or agreed to in writing,
- * software distributed under the License is distributed on an
- * "AS IS" BASIS, WITHOUT WARRANTIES OR CONDITIONS OF ANY
- * KIND, either express or implied.  See the License for the
- * specific language governing permissions and limitations
- * under the License.
- */
-
-import java.util.List;
 import java.util.Set;
 
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
-import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.settings.Server;
-import org.apache.maven.settings.crypto.DefaultSettingsDecryptionRequest;
-import org.apache.maven.settings.crypto.SettingsDecrypter;
-import org.apache.maven.settings.crypto.SettingsDecryptionRequest;
-import org.apache.maven.settings.crypto.SettingsDecryptionResult;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.deployment.DeployRequest;
 import org.eclipse.aether.deployment.DeploymentException;
@@ -83,9 +58,6 @@ public final class DeployMojo extends AbstractPackagerMojo {
 	@Parameter(property="repositoryType", defaultValue="default")
 	private String repositoryType;
 	
-	@Component 
-    private SettingsDecrypter settingsDecrypter; 
-	
 	/**
 	 * Deploy each of the provided {@link Module}s, along with their SubArtifacts (POMs, JavaDoc bundle, etc.), to the repository location
 	 * indicated by {@link #repositoryUrl}.
@@ -129,7 +101,7 @@ public final class DeployMojo extends AbstractPackagerMojo {
 	 * 
 	 * @see http://maven.apache.org/settings.html#Servers
 	 */
-	private Authentication getAuthentication(String serverId) {
+    protected Authentication getAuthentication(String serverId) {
 		
 		Authentication authentication = null;
 		Server server = getDecryptedServer(serverId);
@@ -141,29 +113,8 @@ public final class DeployMojo extends AbstractPackagerMojo {
 				.addPrivateKey(server.getPrivateKey(), server.getPassphrase())
 				.build();
 		}
+		
 		return authentication;
 	}
 
-	/**
-	 * Decrypt settings and return the server element with the given id.  Useful for e.g., reading encrypted 
-	 * user credentials.
-	 * 
-	 * @param id the id of the server to be decrypted
-	 * @return a Server with its protected elements decrypted, if one is found with the given id.  Null otherwise.
-	 * 
-	 * @see http://maven.apache.org/guides/mini/guide-encryption.html
-	 */
-    private Server getDecryptedServer(String id) { 
-        final SettingsDecryptionRequest settingsDecryptionRequest = new DefaultSettingsDecryptionRequest(); 
-        settingsDecryptionRequest.setServers(settings.getServers()); 
-        final SettingsDecryptionResult decrypt = settingsDecrypter.decrypt(settingsDecryptionRequest); 
-        List<Server> servers = decrypt.getServers();
-        
-        for (Server server : servers) {
-        	if (server.getId().equals(id)) {
-        		return server;
-        	}
-        }
-        return null;
-    } 
 }
