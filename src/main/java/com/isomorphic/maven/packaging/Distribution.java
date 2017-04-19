@@ -225,8 +225,6 @@ public final class Distribution {
 	 * 
 	 * @param product The propduct for which a distribution exists and has been previously configured
 	 * @param license The license under which the product is distributed and with which to execute some repackaing operation
-	 * @param version The version number of the Isomorphic build, as described at smartclient.com
-	 * @param date The date on which the build was made available
 	 * @return The fully-prepared Distribution instance, suitable for downloading and/or manipulating SDK bundles and their contents
 	 * @throws IllegalArgumentException when no instance is found for the given Product, License combination
 	 */
@@ -304,7 +302,7 @@ public final class Distribution {
 	/**
 	 * Sets entries to the collection of regular expressions used to determine which hyperlinks should be used to download files from smartclient.com,
 	 * clearing any expressions provided previously.
-	 * <p/>
+	 * <p>
 	 * Each of the expressions provided is used to construct selection criteria used by an html parser.  Example:
 	 * <pre>
 	 *  	include("smartgwt-.*\\.zip");
@@ -345,9 +343,11 @@ public final class Distribution {
 
 	/** 
 	 * Returns the relative URL representing the location of the distribution's "remote index", or download page.  e.g.,
-	 * <p/>
+	 * <p>
 	 * /builds/SmartGWT/4.1d/EnterpriseEval/2014-01-01
 	 * 
+	 * @param buildNumber
+	 * @param buildDate
 	 * @return the URL representing the location of the distribution's "remote index", or download page.
 	 */
 	protected String getRemoteIndex(String buildNumber, String buildDate) {
@@ -374,7 +374,7 @@ public final class Distribution {
 	 * files from specified resources (e.g., javadoc).
 	 * 
 	 * @param to The directory to which each file should be extracted.
-	 * @throws IOException
+	 * @throws IOException on any IOException during unzip operations
 	 */
 	public void unpack(File to) throws IOException {
 		

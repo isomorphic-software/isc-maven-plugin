@@ -33,8 +33,8 @@ import com.isomorphic.maven.packaging.Module;
 /**
  * Installs a collection of {@link Module}s to the user's local repository. 
  * Functionally, pretty much just like the Install Plugin's install-file goal, except this one works on a collection.
- * 
- * @see http://maven.apache.org/plugins/maven-install-plugin/install-file-mojo.html
+ * <p> 
+ * Refer to http://maven.apache.org/plugins/maven-install-plugin/install-file-mojo.html
  */
 @Mojo(name="install", requiresProject=false)
 public final class InstallMojo extends AbstractPackagerMojo {

@@ -21,8 +21,8 @@ import com.isomorphic.maven.packaging.Module;
 /**
  * Deploys a collection of {@link Module}s to the Maven repository location indicated by the given {@link #repositoryUrl} property. 
  * Functionally, pretty much just like the Deploy Plugin's deploy-file goal, except this one works on a collection.
- * 
- * @see http://maven.apache.org/plugins/maven-deploy-plugin/deploy-file-mojo.html
+ * <p>
+ * Refer to http://maven.apache.org/plugins/maven-deploy-plugin/deploy-file-mojo.html
  */
 @Mojo(name="deploy", requiresProject=false)
 public final class DeployMojo extends AbstractPackagerMojo {
@@ -32,8 +32,8 @@ public final class DeployMojo extends AbstractPackagerMojo {
 	/**
 	 * The identifier of a server entry from which Maven should read the authentication credentials
 	 * to be used during deployment to {@link #repositoryUrl}. 
-	 * 
-	 * @see http://maven.apache.org/ref/3.1.1/maven-settings/settings.html#class_server
+	 * <p>
+	 * Refer to http://maven.apache.org/ref/3.1.1/maven-settings/settings.html#class_server
 	 * @since 1.0.0
 	 */
 	@Parameter(property="repositoryId")
@@ -51,8 +51,8 @@ public final class DeployMojo extends AbstractPackagerMojo {
 	
 	/**
 	 * The repositoryType, as required by the Builder(String, String, String) constructor.
-	 * 
-	 * @see <a href="http://http://download.eclipse.org/aether/aether-core/0.9.0.M2/apidocs/org/eclipse/aether/repository/RemoteRepository.Builder.html#RemoteRepository.Builder(java.lang.String,%20java.lang.String,%20java.lang.String)">
+	 * <p>
+	 * Refer to <a href="http://http://download.eclipse.org/aether/aether-core/0.9.0.M2/apidocs/org/eclipse/aether/repository/RemoteRepository.Builder.html#RemoteRepository.Builder(java.lang.String,%20java.lang.String,%20java.lang.String)">
 	 * @since 1.0.0
 	 */
 	@Parameter(property="repositoryType", defaultValue="default")
@@ -94,13 +94,14 @@ public final class DeployMojo extends AbstractPackagerMojo {
 	
 	/**
 	 * Returns user credentials for the server with the given id, as kept in Maven
-	 * settings.  
+	 * settings.
+	 * <p>
+	 * Refer to http://maven.apache.org/settings.html#Servers
 	 * 
 	 * @param serverId the id of the server containing the authentication credentials
 	 * @return the Authentication credentials for the given server with the given id
 	 * 
-	 * @see http://maven.apache.org/settings.html#Servers
-	 */
+     */
     protected Authentication getAuthentication(String serverId) {
 		
 		Authentication authentication = null;

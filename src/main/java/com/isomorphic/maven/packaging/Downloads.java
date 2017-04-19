@@ -89,9 +89,10 @@ public class Downloads {
 	/**
 	 * Set the proxy configuration, if any, needed to support network operations from behind
 	 * a proxy.
+	 * <p>
+	 * Refer to http://maven.apache.org/guides/mini/guide-proxies.html
 	 * 
 	 * @param proxyConfiguration the proxy configuration, if any, needed to support network operations from behind a proxy
-	 * @see http://maven.apache.org/guides/mini/guide-proxies.html
 	 */
 	public void setProxyConfiguration(Proxy proxyConfiguration) {
 		this.proxyConfiguration = proxyConfiguration;
@@ -120,6 +121,9 @@ public class Downloads {
 	/**
 	 * Retrieves a {@link Distribution} instance for each of the given licenses, downloads
 	 * files if necessary, and {@link Distribution#getFiles() links} the local file to the distribution.
+	 * <p>
+	 * Refer to http://www.smartclient.com/builds/
+	 * 
 	 * 
 	 * @param product The product built and distributed by Isomorphic Software.  e.g., SmartCLient 
 	 * @param buildNumber The build number of the desired distribution.  e.g., 4.1d
@@ -127,9 +131,7 @@ public class Downloads {
 	 * @param licenses The licenses, or editions, that the product is released under, and for which the user is registered
 	 * @return A collection of Distributions, each having its contents resolved to local files, and suitable for use in repacking operations
 	 * @throws MojoExecutionException on any error
-	 * 
-	 * @see http://www.smartclient.com/builds/
-	 */
+     */
 	public List<Distribution> fetch(Product product, String buildNumber, String buildDate, License...licenses) throws MojoExecutionException {
 
 		try {
@@ -355,9 +357,11 @@ public class Downloads {
 	
 	/**
 	 * Adapted from the Site plugin's AbstractDeployMojo to allow http operations through proxy.
-	 * 
-	 * @see http://maven.apache.org/guides/mini/guide-proxies.html
-	 * @see http://maven.apache.org/plugins/maven-site-plugin/xref/org/apache/maven/plugins/site/AbstractDeployMojo.html.
+	 * <p>
+	 * Refer to
+	 * http://maven.apache.org/guides/mini/guide-proxies.html
+	 * <br>
+	 * http://maven.apache.org/plugins/maven-site-plugin/xref/org/apache/maven/plugins/site/AbstractDeployMojo.html.
 	 */
 	private boolean isProxied(Proxy proxyConfig) throws MalformedURLException {
 	    String nonProxyHostsAsString = proxyConfig.getNonProxyHosts();

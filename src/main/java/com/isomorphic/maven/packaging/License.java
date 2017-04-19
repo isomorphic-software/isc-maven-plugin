@@ -21,8 +21,8 @@ package com.isomorphic.maven.packaging;
 
 /**
  * An Isomorphic product 'edition'.   
- * 
- * @see http://www.smartclient.com/product/editions.jsp
+ * <p>
+ * Refer to http://www.smartclient.com/product/editions.jsp
  */
 public enum License {
 	

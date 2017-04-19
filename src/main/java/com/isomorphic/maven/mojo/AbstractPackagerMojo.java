@@ -77,7 +77,7 @@ import com.isomorphic.maven.packaging.Product;
  * which are basically to resolve the files in a given distribution to a
  * collection of Maven artifacts suitable for installation or deployment to some
  * Maven repository.
- * <p/>
+ * <p>
  * The resulting artifacts are provided to this object's {@link #doExecute(Set)}
  * method.
  */
@@ -101,10 +101,10 @@ public abstract class AbstractPackagerMojo extends AbstractMojo {
      * ="http://www.smartclient.com/builds/">http://www.smartclient.com/builds
      * /</a>, in yyyy-MM-dd format. e.g., 2013-25-12. Used to determine both
      * remote and local file locations. 
-     * <br/>
+     * <br>
      * Note that if no value is provided, an attempt is made to discover the date of the
      * latest distribution currently published to the Isomorphic build server.
-     * <br/>
+     * <br>
      * <b>Default value is</b>: <tt>The date of the most recent distribution</tt>.
      * 
      * @since 1.0.0
@@ -157,7 +157,7 @@ public abstract class AbstractPackagerMojo extends AbstractMojo {
      * If true, no attempt is made to download any remote distribution. Files
      * will be loaded instead from a path constructed of the following parts
      * (e.g., C:/downloads/SmartGWT/PowerEdition/4.1d/2013-12-25/zip):
-     * <p/>
+     * 
      * <ul>
      * <li>{@link #workdir}</li>
      * <li>{@link #product}</li>
@@ -179,7 +179,7 @@ public abstract class AbstractPackagerMojo extends AbstractMojo {
      * first run the download goal, manipulate the version number of some
      * dependency in some POM, and then run the install goal with
      * skipExtraction=false to prevent the modified POM from being overwritten.
-     * <p/>
+     * <p>
      * This is the kind of thing that should generally be avoided, however.
      */
     @Parameter(property = "skipExtraction", defaultValue = "false")
@@ -198,7 +198,7 @@ public abstract class AbstractPackagerMojo extends AbstractMojo {
      * "http://books.sonatype.com/mvnref-book/reference/pom-relationships-sect-pom-syntax.html#pom-reationships-sect-versions"
      * >versioned</a> with the 'SNAPSHOT' qualifier, in the case of development
      * builds only. The setting has no effect on patch builds.
-     * <p/>
+     * <p>
      * If false, each artifact's POM file is modified to remove the unwanted
      * qualifier. This can be useful if you need to deploy a development build
      * to a production environment.
@@ -222,7 +222,7 @@ public abstract class AbstractPackagerMojo extends AbstractMojo {
      * href="http://maven.apache.org/settings.html#Servers">server
      * configuration</a> containing authentication credentials for the
      * smartclient.com website, used to download licensed products.
-     * <p/>
+     * <p>
      * Not strictly necessary for unprotected (LGPL) distributions.
      * 
      * @since 1.0.0
@@ -373,9 +373,10 @@ public abstract class AbstractPackagerMojo extends AbstractMojo {
     /**
      * Download the specified distributions, if necessary, extract resources
      * from them, and use the results to create Maven artifacts as appropriate:
-     * <p/>
+     * <p>
      * Try to install all of the main artifacts - e.g., those found in lib/*.jar
-     * and assembly/*.zip <br/>
+     * and assembly/*.zip 
+     * <br>
      * Try to match main artifacts to 'subartifacts' by name and attach them
      * (with classifiers as necessary)
      * 
@@ -506,7 +507,7 @@ public abstract class AbstractPackagerMojo extends AbstractMojo {
         }
     }
 
-    /**
+    /**f
      * Read the given POM so it can be used as the source of coordinates, etc.
      * during artifact construction. Note that if this object's
      * {@link #snapshots} property is true, and we're working with a development
@@ -544,11 +545,11 @@ public abstract class AbstractPackagerMojo extends AbstractMojo {
 	/**
 	 * Decrypt settings and return the server element with the given id.  Useful for e.g., reading encrypted 
 	 * user credentials.
+	 * <p>
+	 * Refer to http://maven.apache.org/guides/mini/guide-encryption.html
 	 * 
 	 * @param id the id of the server to be decrypted
 	 * @return a Server with its protected elements decrypted, if one is found with the given id.  Null otherwise.
-	 * 
-	 * @see http://maven.apache.org/guides/mini/guide-encryption.html
 	 */
     protected Server getDecryptedServer(String id) { 
         final SettingsDecryptionRequest settingsDecryptionRequest = new DefaultSettingsDecryptionRequest(); 

@@ -23,8 +23,6 @@ import java.io.BufferedInputStream;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
-import java.io.OutputStream;
 import java.util.Enumeration;
 import java.util.jar.Attributes;
 import java.util.jar.JarEntry;
@@ -48,8 +46,8 @@ public class ArchiveUtils {
 	/**
 	 * Builds a JAR file from the contents of a directory on the filesystem (recursively).
 	 * Adapted from stackoverflow solution.  
-	 * 
-	 * @see http://stackoverflow.com/questions/1281229/how-to-use-jaroutputstream-to-create-a-jar-file
+	 * <p>
+	 * Refer to http://stackoverflow.com/questions/1281229/how-to-use-jaroutputstream-to-create-a-jar-file
 	 * 
 	 * @param directory the directory containing the content to be xzipped up
 	 * @param output the zip file to be written to
@@ -65,8 +63,8 @@ public class ArchiveUtils {
 
 	/**
 	 * Builds a ZIP file from the contents of a directory on the filesystem (recursively).
-	 * 
-	 * @see http://stackoverflow.com/questions/1281229/how-to-use-jaroutputstream-to-create-a-jar-file
+	 * <p>
+	 * Refer to http://stackoverflow.com/questions/1281229/how-to-use-jaroutputstream-to-create-a-jar-file
 	 * 
 	 * @param directory the directory containing the content to be xzipped up
 	 * @param output the zip file to be written to
@@ -102,42 +100,42 @@ public class ArchiveUtils {
 	 * <ul>	
 	 * 	<li>
 	 * 		Rename a file (example: smartgwt-lgpl.jar)
-	 * 		<p/>
+	 * 		<p>
 	 * 		<code>
 	 * 			ArchiveUtils.rewritePath("smartgwtee-4.1d/lib/smartgwt.jar", "smartgwt-lgpl.jar");	
 	 * 		</code> 
 	 * 	</li>
 	 * 	<li>
 	 * 		Move to another directory (example: target/smartgwt.jar)
-	 *		<p/>
+	 *		<p>
 	 * 		<code>
 	 * 			ArchiveUtils.rewritePath("smartgwtee-4.1d/lib/smartgwt.jar", "target");
 	 * 		</code>
 	 * </li>
 	 * <li>Move and rename (example: target/smartgwt-lgpl.jar)
-	 * 		<p/>
+	 * 		<p>
 	 * 		<code>
 	 * 			ArchiveUtils.rewritePath("smartgwtee-4.1d/lib/smartgwt.jar", "target/smartgwt-lgpl.jar"); 
 	 * 		</code> 
 	 * </li>
-	 *  <li>Move to new root directory, preserving some part of the existing path</li>
+	 *  <li>Move to new root directory, preserving some part of the existing path
 	 *  	<ul>
 	 *  		<li>
 	 *  			example: doc/api/com/isomorphic/servlet/IDACall.html
-	 *  			<p/>
+	 *  			<p>
 	 *  			<code>
 	 *  				ArchiveUtils.rewritePath("smartgwtee-4.1d/doc/javadoc/com/isomorphic/servlet/IDACall.html","doc/api/#javadoc");
 	 *  			</code>
 	 *    		</li>
 	 *    		<li>
 	 *  			example: doc/api/com/isomorphic/servlet/network/FileAssembly.html
-	 *  			<p/>
+	 *  			<p>
 	 *  			<code>
 	 * 	 				ArchiveUtils.rewritePath("smartgwtee-4.1d/doc/javadoc/com/isomorphic/servlet/CompressionFilter.html", "doc/api/#javadoc/network");
 	 *  			</code>
 	 *    		</li>
 	 *  	</ul>
-
+	 *   </li>
 	 * </ul>
 	 * 
 	 * @param oldValue the existing path
