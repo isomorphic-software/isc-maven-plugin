@@ -166,7 +166,7 @@ public class Downloads {
             logout();
 
             if (links.length > 0) {
-                return links[links.length-1];
+                return links[0];
             } else {
                 return null;
             }
