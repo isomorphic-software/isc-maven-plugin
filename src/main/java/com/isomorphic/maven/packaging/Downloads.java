@@ -75,7 +75,7 @@ public class Downloads {
 	private UsernamePasswordCredentials credentials;
 		
 	private DefaultHttpClient httpClient = new DefaultHttpClient();
-	private HttpHost host = new HttpHost(DOMAIN);
+	private HttpHost host = new HttpHost(DOMAIN, -1, "https");
 	
 	/**
 	 * Constructor taking the credentials needed for authentication on smartclient.com. 
@@ -248,7 +248,7 @@ public class Downloads {
 		
 		try {
 		
-			LOGGER.debug("Requesting list of files from {}{}", DOMAIN, url);
+			LOGGER.debug("Requesting list of files from '{}{}'", DOMAIN, url);
 			response = httpClient.execute(host, request);
 		
 		} catch (Exception e) {
@@ -406,5 +406,4 @@ public class Downloads {
 		}
 	    return true;
 	}
-
 }
