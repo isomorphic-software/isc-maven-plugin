@@ -18,9 +18,7 @@
 
 #Overview
 
-Isomorphic Software continues to provide a [Maven repository](http://www.smartclient.com/maven2/) containing SmartGWT artifacts released under the LGPL license, but does not publish any [nightly development or patch build](http://www.smartclient.com/builds), or any of the [licensed editions](http://www.smartclient.com/product/editions.jsp) containing the powerful [server framework](http://smartclient.com/product/whyupgrade.jsp).
-   
-As with other products where licensing is an issue, you'll need to install these builds on your own repository before you can use them in your Maven project.  Since SmartGWT version 4.0p / SmartClient 9.0p, POMs are distributed with the official SDK for this purpose.
+Prior to SmartGWT version 4.1 / SmartClient version 10.1, Isomorphic Software provided a [Maven repository](http://www.smartclient.com/maven2/) containing SmartGWT artifacts released under the LGPL license. [Licensed editions](http://www.smartclient.com/product/editions.jsp) containing the powerful [server framework](http://smartclient.com/product/whyupgrade.jsp) were never published on any public repository, instead requiring that they be installed / deployed locally. Since SmartGWT version 4.0p / SmartClient 9.0p, POMs have been distributed with the official SDK for this purpose.
 
 The SmartClient/SmartGWT JARs you'll find in any SDK download are just like any other JAR - you could deploy them to your own Maven repositories with the maven-deploy-plugin's [deploy-file](http://maven.apache.org/plugins/maven-deploy-plugin/deploy-file-mojo.html) goal.  There are a lot of steps involved, though, to do that the right way for so many artifacts (version 4.1 of the SmartGWT eval bundle contains more than 20 of them).
 
