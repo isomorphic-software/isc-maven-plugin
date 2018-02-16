@@ -73,7 +73,7 @@ public final class Distribution {
 	private static final String DOC_EXCLUDES = "**/apache-ant*/**";
 	
 	//ant-style wildcards used at extraction for filtering the distribution for the JARs to be included 
-	private static final String JAR_INCLUDES = "**/isc-*.jar, **/isomorphic_*.jar, **/smartgwt-*.jar";
+	private static final String JAR_INCLUDES = "**/isc-*.jar, **/isomorphic_*.jar, **/smartgwt-*.jar, **/archetype-*.jar";
 	private static final String JAR_EXCLUDES = "**/samples/**, **/*examples.jar, **/*tomcat.jar, **/*isomorphic_web_services.jar, **/isomorphic_applets.jar";
 	
 	//the following ant patterns currently yield files that are deliberately renamed (see static initialization block) - exclude them as well
@@ -83,7 +83,7 @@ public final class Distribution {
 	private static final String POM_SMARTCLIENT = "**/smartclient-*resources.pom, **/smartclient-tools.xml, **/smartclient-messaging.xml, **/smartclient-analytics.xml";
 	private static final String POM_SMARTGWT = "**/smartgwt-skins.pom, **/smartgwt-analytics.pom, **/smartgwt-messaging.pom";
 	private static final String POM_SERVER = "**/isomorphic-*.pom, **/isomorphic-*.xml, **/dependencygroup-*.xml";
-	private static final String POM_SHARED = "**/isc-*.pom, **/isc-*.xml";
+	private static final String POM_SHARED = "**/isc-*.pom, **/isc-*.xml, **/archetype-*.pom, **/archetype-*.xml";
 
 	//ant-style wildcards used at extraction for filtering the distribution for Selenium support resources
 	private static final String SELENIUM_INCLUDES = "**/selenium/**, **/batchReport.template";

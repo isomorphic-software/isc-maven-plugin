@@ -1,5 +1,8 @@
 package com.isomorphic.maven.util;
 
+import java.io.IOException;
+import java.io.OutputStream;
+
 /*
  * Licensed to the Apache Software Foundation (ASF) under one
  * or more contributor license agreements.  See the NOTICE file
@@ -22,9 +25,6 @@ package com.isomorphic.maven.util;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.output.CountingOutputStream;
 import org.apache.commons.lang3.StringUtils;
-
-import java.io.IOException;
-import java.io.OutputStream;
 
 /**
  * @author Daniel Johansson

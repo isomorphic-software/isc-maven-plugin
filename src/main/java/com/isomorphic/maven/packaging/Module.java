@@ -60,6 +60,9 @@ public class Module extends AbstractArtifact implements Comparable<Module> {
 		version = model.getVersion();
 		
 		extension = model.getPackaging().toLowerCase();
+		if ("maven-archetype".equals(extension)) {
+			extension = "jar";
+		}
 
 		if (! extension.equals("pom") && model.getPomFile() != null) {
 			attach(model.getPomFile(), null);

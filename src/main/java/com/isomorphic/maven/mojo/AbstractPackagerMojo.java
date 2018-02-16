@@ -44,17 +44,19 @@ import org.apache.commons.io.filefilter.WildcardFileFilter;
 import org.apache.commons.lang3.StringUtils;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.maven.model.Model;
+import org.apache.maven.model.Parent;
 import org.apache.maven.model.building.DefaultModelBuildingRequest;
 import org.apache.maven.model.building.ModelBuilder;
 import org.apache.maven.model.building.ModelBuildingException;
 import org.apache.maven.model.building.ModelBuildingRequest;
-import org.apache.maven.model.building.ModelBuildingResult;
 import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.MavenProject;
+import org.apache.maven.project.ProjectBuildingRequest.RepositoryMerging;
+import org.apache.maven.project.ProjectModelResolver;
 import org.apache.maven.settings.Server;
 import org.apache.maven.settings.Settings;
 import org.apache.maven.settings.crypto.DefaultSettingsDecryptionRequest;
@@ -63,6 +65,8 @@ import org.apache.maven.settings.crypto.SettingsDecryptionRequest;
 import org.apache.maven.settings.crypto.SettingsDecryptionResult;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
+import org.eclipse.aether.impl.ArtifactResolver;
+import org.eclipse.aether.impl.RemoteRepositoryManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -241,7 +245,13 @@ public abstract class AbstractPackagerMojo extends AbstractMojo {
 
     @Component
     protected RepositorySystem repositorySystem;
+    
+    @Component
+    protected ArtifactResolver artifactResolver;
 
+    @Component
+    protected RemoteRepositoryManager remoteRepositoryManager;
+    
     @Component
     protected Settings settings;
 
@@ -434,8 +444,9 @@ public abstract class AbstractPackagerMojo extends AbstractMojo {
                     FileFilterUtils.suffixFileFilter("zip")),
                 FileFilterUtils.or(FileFilterUtils.nameFileFilter("lib"),
                     FileFilterUtils.nameFileFilter("pom"),
-                    FileFilterUtils.nameFileFilter("assembly")));
-
+                    FileFilterUtils.nameFileFilter("assembly"))
+            );
+            
             if (files.isEmpty()) {
                 throw new MojoExecutionException(
                     String
@@ -469,6 +480,8 @@ public abstract class AbstractPackagerMojo extends AbstractMojo {
                         continue;
                     }
 
+                    
+                    
                     Model model = getModelFromFile(poms.iterator().next());
                     Module module = new Module(model, file);
 
@@ -535,11 +548,19 @@ public abstract class AbstractPackagerMojo extends AbstractMojo {
             FileUtils.write(pom, content);
         }
 
+        ProjectModelResolver resolver = new ProjectModelResolver(repositorySystemSession, null, repositorySystem, remoteRepositoryManager, project.getRemoteProjectRepositories(), RepositoryMerging.POM_DOMINANT, null);
         ModelBuildingRequest request = new DefaultModelBuildingRequest();
+        request.setModelResolver(resolver);
         request.setPomFile(pom);
-
-        ModelBuildingResult result = modelBuilder.build(request);
-        return result.getEffectiveModel();
+        
+        Model model = modelBuilder.buildRawModel(pom, 0, false).get();
+        Parent parent = model.getParent();
+        if (parent != null) {
+        		model.setGroupId(parent.getGroupId());
+        		model.setVersion(parent.getVersion());
+        }
+        
+        return model;
     }
 
 	/**
