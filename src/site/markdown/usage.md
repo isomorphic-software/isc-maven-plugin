@@ -44,6 +44,8 @@ With a few exceptions, artifacts take the same name as a corresponding file in t
 * __isomorphic-__: Artifacts belonging to the server framework.
     
 * __dependencygroup-__: Logical grouping of related dependencies.
+
+* __archetype-__: Archetypes useful for new project creation.
     
 * __isc-__: Everything else, including support libraries, Maven assemblies, etc.
     
