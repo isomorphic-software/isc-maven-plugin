@@ -42,31 +42,18 @@ import org.apache.commons.io.filefilter.IOFileFilter;
 import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.apache.commons.io.filefilter.WildcardFileFilter;
 import org.apache.commons.lang3.StringUtils;
+import org.apache.http.HttpHost;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.maven.model.Model;
 import org.apache.maven.model.Parent;
 import org.apache.maven.model.building.DefaultModelBuildingRequest;
-import org.apache.maven.model.building.ModelBuilder;
 import org.apache.maven.model.building.ModelBuildingException;
 import org.apache.maven.model.building.ModelBuildingRequest;
-import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
-import org.apache.maven.plugins.annotations.Component;
 import org.apache.maven.plugins.annotations.Parameter;
-import org.apache.maven.project.MavenProject;
 import org.apache.maven.project.ProjectBuildingRequest.RepositoryMerging;
 import org.apache.maven.project.ProjectModelResolver;
-import org.apache.maven.settings.Server;
-import org.apache.maven.settings.Settings;
-import org.apache.maven.settings.crypto.DefaultSettingsDecryptionRequest;
-import org.apache.maven.settings.crypto.SettingsDecrypter;
-import org.apache.maven.settings.crypto.SettingsDecryptionRequest;
-import org.apache.maven.settings.crypto.SettingsDecryptionResult;
-import org.eclipse.aether.RepositorySystem;
-import org.eclipse.aether.RepositorySystemSession;
-import org.eclipse.aether.impl.ArtifactResolver;
-import org.eclipse.aether.impl.RemoteRepositoryManager;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -75,6 +62,7 @@ import com.isomorphic.maven.packaging.Downloads;
 import com.isomorphic.maven.packaging.License;
 import com.isomorphic.maven.packaging.Module;
 import com.isomorphic.maven.packaging.Product;
+import com.isomorphic.maven.util.HttpRequestManager;
 
 /**
  * A base class meant to deal with prerequisites to install / deploy goals,
@@ -85,10 +73,14 @@ import com.isomorphic.maven.packaging.Product;
  * The resulting artifacts are provided to this object's {@link #doExecute(Set)}
  * method.
  */
-public abstract class AbstractPackagerMojo extends AbstractMojo {
+public abstract class AbstractPackagerMojo extends AbstractBaseMojo {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractPackagerMojo.class);
 
+	private static final HttpHost HOST = new HttpHost("www.smartclient.com", -1, "https");
+    
+	private HttpRequestManager httpWorker;
+	
     /**
      * If true, the optional analytics module (bundled and distributed
      * separately) has been licensed and should be downloaded with the
@@ -157,6 +149,16 @@ public abstract class AbstractPackagerMojo extends AbstractMojo {
     @Parameter(property = "overwrite", defaultValue = "false")
     protected Boolean overwrite;
 
+    /**
+     * If true, makes a copy of the given distribution in a 'latest' subdirectory.
+     * Can be useful for bookmarking documentation, etc. but adds additional install time
+     * and storage requirements.
+     * 
+     * @since 1.4.0
+     */
+    @Parameter(property = "copyToLatestFolder", defaultValue = "false")
+    protected Boolean copyToLatestFolder;
+    
     /**
      * If true, no attempt is made to download any remote distribution. Files
      * will be loaded instead from a path constructed of the following parts
@@ -234,30 +236,6 @@ public abstract class AbstractPackagerMojo extends AbstractMojo {
     @Parameter(property = "serverId", defaultValue = "smartclient-developer")
     protected String serverId;
 
-    @Parameter(readonly = true, defaultValue = "${repositorySystemSession}")
-    protected RepositorySystemSession repositorySystemSession;
-
-    @Component
-    protected ModelBuilder modelBuilder;
-
-    @Component
-    protected MavenProject project;
-
-    @Component
-    protected RepositorySystem repositorySystem;
-    
-    @Component
-    protected ArtifactResolver artifactResolver;
-
-    @Component
-    protected RemoteRepositoryManager remoteRepositoryManager;
-    
-    @Component
-    protected Settings settings;
-
-	@Component 
-    private SettingsDecrypter settingsDecrypter; 
-    
     /**
      * The point where a subclass is able to manipulate the collection of
      * artifacts prepared for it by this object's {@link #execute()} method.
@@ -286,22 +264,11 @@ public abstract class AbstractPackagerMojo extends AbstractMojo {
      */
     public void execute() throws MojoExecutionException, MojoFailureException {
 
-        Server server = getDecryptedServer(serverId);
-        String username = null;
-        String password = null;
-        if (server != null) {
-            username = server.getUsername();
-            password = server.getPassword();
-        } else {
-            LOGGER.warn("No server configured with id '{}'.  Will be unable to authenticate.",
-                serverId);
-        }
-        
         // allow execution to proceed without login credentials - it may be that
         // they're not required
-        UsernamePasswordCredentials credentials = null;
-        if (username != null) {
-            credentials = new UsernamePasswordCredentials(username, password);
+        UsernamePasswordCredentials credentials = getCredentials(serverId);
+        if (credentials == null) {
+        	LOGGER.warn("No server configured with id '{}'.  Will be unable to authenticate.", serverId);
         }
         
         String buildNumberFormat = "\\d.*\\.\\d.*[d|p]";
@@ -311,73 +278,88 @@ public abstract class AbstractPackagerMojo extends AbstractMojo {
                 buildNumber, buildNumberFormat));
         }
 
-        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-        dateFormat.setLenient(false);
-        if (buildDate == null) {
-            Distribution d = Distribution.get(product, license);
-            Downloads dl = new Downloads(credentials);
-            
-            LOGGER.info("No buildDate provided.  Contacting Isomorphic build server to "
-                + "look for the most recent distribution...");
-            
-            String link = dl.findCurrentBuild(d, buildNumber);
-            
-            if (link == null) {
-                throw new MojoExecutionException("No build found for the given distribution.");
-            }
-
-            LOGGER.debug("Extracting date from server response: '{}'", link);
-            
-            buildDate = StringUtils.substringAfterLast(link, "/");
-
-            LOGGER.info("buildDate set to '{}'", buildDate);
-            
-        }
+        httpWorker = new HttpRequestManager(HOST, credentials, settings.getActiveProxy());
+        Downloads dl = new Downloads(httpWorker);
+        
         try {
+
+        	httpWorker.login();
+        	
+	        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+	        dateFormat.setLenient(false);
+	        if (buildDate == null) {
+	            Distribution d = Distribution.get(product, license);
+	            
+	            LOGGER.info("No buildDate provided.  Contacting Isomorphic build server to "
+	                + "look for the most recent distribution...");
+	            
+	            String link = dl.findCurrentBuild(d, buildNumber);
+	            
+	            if (link == null) {
+	                throw new MojoExecutionException("No build found for the given distribution.");
+	            }
+	
+	            LOGGER.debug("Extracting date from server response: '{}'", link);
+	            
+	            buildDate = StringUtils.substringAfterLast(link, "/");
+	
+	            LOGGER.info("buildDate set to '{}'", buildDate);
+	            
+	        }
+
             dateFormat.parse(buildDate);
+            
+	        File basedir = FileUtils.getFile(workdir, product.toString(), license.toString(),
+	            buildNumber, buildDate);
+	
+	        // add optional modules to the list of downloads
+	        List<License> licenses = new ArrayList<License>();
+	        licenses.add(license);
+	        if (license == POWER || license == ENTERPRISE) {
+	            if (includeAnalytics) {
+	                licenses.add(ANALYTICS_MODULE);
+	            }
+	            if (includeMessaging) {
+	                licenses.add(MESSAGING_MODULE);
+	            }
+	        }
+	
+	        // collect the maven artifacts and send them along to the abstract method
+	        Set<Module> artifacts = collect(licenses, basedir);
+
+	        String[] executables = { "bat", "sh", "command" };
+	        Collection<File> scripts = FileUtils.listFiles(basedir, executables, true);
+	        
+	        if (copyToLatestFolder) {
+		        File bookmarkable = new File(basedir.getParent(), "latest");
+		        LOGGER.info("Copying distribution to '{}'", bookmarkable.getAbsolutePath());
+		        try {
+		            FileUtils.forceMkdir(bookmarkable);
+		            FileUtils.cleanDirectory(bookmarkable);
+		            FileUtils.copyDirectory(basedir, bookmarkable,
+		                FileFilterUtils.notFileFilter(FileFilterUtils.nameFileFilter("zip")));
+		            
+		            scripts.addAll(FileUtils.listFiles(bookmarkable, executables, true));
+		            
+		        } catch (IOException e) {
+		            throw new MojoFailureException("Unable to copy distribution contents", e);
+		        }	        	
+	        }
+	
+	        for (File script : scripts) {
+	            script.setExecutable(true);
+	            LOGGER.debug("Enabled execute permissions on file '{}'", script.getAbsolutePath());
+	        }
+        
+	        doExecute(artifacts);
+	        
         } catch (ParseException e) {
             throw new MojoExecutionException(String.format(
                 "buildDate '%s' must take the form yyyy-MM-dd.", buildDate));
-        }
+        } finally {
+            httpWorker.logout();        	
+        }    
         
-        File basedir = FileUtils.getFile(workdir, product.toString(), license.toString(),
-            buildNumber, buildDate);
-
-        // add optional modules to the list of downloads
-        List<License> licenses = new ArrayList<License>();
-        licenses.add(license);
-        if (license == POWER || license == ENTERPRISE) {
-            if (includeAnalytics) {
-                licenses.add(ANALYTICS_MODULE);
-            }
-            if (includeMessaging) {
-                licenses.add(MESSAGING_MODULE);
-            }
-        }
-
-        // collect the maven artifacts and send them along to the abstract method
-        Set<Module> artifacts = collect(credentials, licenses, basedir);
-
-        File bookmarkable = new File(basedir.getParent(), "latest");
-        LOGGER.info("Copying distribution to '{}'", bookmarkable.getAbsolutePath());
-        try {
-            FileUtils.forceMkdir(bookmarkable);
-            FileUtils.cleanDirectory(bookmarkable);
-            FileUtils.copyDirectory(basedir, bookmarkable,
-                FileFilterUtils.notFileFilter(FileFilterUtils.nameFileFilter("zip")));
-        } catch (IOException e) {
-            throw new MojoFailureException("Unable to copy distribution contents", e);
-        }
-
-        String[] executables = { "bat", "sh", "command" };
-        Collection<File> scripts = FileUtils.listFiles(basedir, executables, true);
-        scripts.addAll(FileUtils.listFiles(bookmarkable, executables, true));
-        for (File script : scripts) {
-            script.setExecutable(true);
-            LOGGER.debug("Enabled execute permissions on file '{}'", script.getAbsolutePath());
-        }
-        doExecute(artifacts);
-
     }
 
     /**
@@ -401,15 +383,14 @@ public abstract class AbstractPackagerMojo extends AbstractMojo {
      * @throws MojoExecutionException
      *             When any fatal error occurs.
      */
-    private Set<Module> collect(UsernamePasswordCredentials credentials, List<License> downloads, File basedir)
+    private Set<Module> collect(List<License> downloads, File basedir)
         throws MojoExecutionException {
 
         File downloadTo = new File(basedir, "zip");
         downloadTo.mkdirs();
 
-        Downloads downloadManager = new Downloads(credentials);
+        Downloads downloadManager = new Downloads(httpWorker);
         downloadManager.setToFolder(downloadTo);
-        downloadManager.setProxyConfiguration(settings.getActiveProxy());
         downloadManager.setOverwriteExistingFiles(overwrite);
 
         File[] existing = downloadTo.listFiles();
@@ -563,26 +544,4 @@ public abstract class AbstractPackagerMojo extends AbstractMojo {
         return model;
     }
 
-	/**
-	 * Decrypt settings and return the server element with the given id.  Useful for e.g., reading encrypted 
-	 * user credentials.
-	 * <p>
-	 * Refer to http://maven.apache.org/guides/mini/guide-encryption.html
-	 * 
-	 * @param id the id of the server to be decrypted
-	 * @return a Server with its protected elements decrypted, if one is found with the given id.  Null otherwise.
-	 */
-    protected Server getDecryptedServer(String id) { 
-        final SettingsDecryptionRequest settingsDecryptionRequest = new DefaultSettingsDecryptionRequest(); 
-        settingsDecryptionRequest.setServers(settings.getServers()); 
-        final SettingsDecryptionResult decrypt = settingsDecrypter.decrypt(settingsDecryptionRequest); 
-        List<Server> servers = decrypt.getServers();
-        
-        for (Server server : servers) {
-        	if (server.getId().equals(id)) {
-        		return server;
-        	}
-        }
-        return null;
-    } 
 }

@@ -21,9 +21,7 @@ package com.isomorphic.maven.packaging;
 
 import java.io.File;
 import java.io.FileOutputStream;
-import java.io.IOException;
 import java.io.OutputStream;
-import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -31,22 +29,10 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
 import org.apache.http.HttpEntity;
-import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
-import org.apache.http.NameValuePair;
-import org.apache.http.auth.AuthScope;
-import org.apache.http.auth.UsernamePasswordCredentials;
-import org.apache.http.client.ClientProtocolException;
-import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpGet;
-import org.apache.http.client.methods.HttpPost;
-import org.apache.http.conn.params.ConnRoutePNames;
-import org.apache.http.impl.client.DefaultHttpClient;
-import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 import org.apache.maven.plugin.MojoExecutionException;
-import org.apache.maven.settings.Proxy;
-import org.codehaus.plexus.util.StringUtils;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Document;
 import org.jsoup.nodes.Element;
@@ -54,6 +40,7 @@ import org.jsoup.select.Elements;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.isomorphic.maven.util.HttpRequestManager;
 import com.isomorphic.maven.util.LoggingCountingOutputStream;
 
 /**
@@ -63,41 +50,21 @@ import com.isomorphic.maven.util.LoggingCountingOutputStream;
 public class Downloads {
 
 	private static final Logger LOGGER = LoggerFactory.getLogger(Downloads.class);
-
-	private static final String DOMAIN = "www.smartclient.com";
-	private static final String LOGIN_URL = "/devlogin/login.jsp";
-	private static final String LOGOUT_URL = "/logout.jsp";
+	private static HttpRequestManager httpWorker;
 	
 	private File toFolder = new File(System.getProperty("java.io.tmpdir"));
 	private Boolean overwriteExistingFiles = Boolean.FALSE;
-	private Proxy proxyConfiguration;
-	
-	private UsernamePasswordCredentials credentials;
-		
-	private DefaultHttpClient httpClient = new DefaultHttpClient();
-	private HttpHost host = new HttpHost(DOMAIN, -1, "https");
 	
 	/**
 	 * Constructor taking the credentials needed for authentication on smartclient.com. 
 	 * 
 	 * @param credentials The credentials needed for authentication on smartclient.com.
+	 * @throws MojoExecutionException 
 	 */
-	public Downloads(UsernamePasswordCredentials credentials) {
-		this.credentials = credentials;
+	public Downloads(HttpRequestManager worker) {
+		httpWorker = worker;
 	}
 	
-	/**
-	 * Set the proxy configuration, if any, needed to support network operations from behind
-	 * a proxy.
-	 * <p>
-	 * Refer to http://maven.apache.org/guides/mini/guide-proxies.html
-	 * 
-	 * @param proxyConfiguration the proxy configuration, if any, needed to support network operations from behind a proxy
-	 */
-	public void setProxyConfiguration(Proxy proxyConfiguration) {
-		this.proxyConfiguration = proxyConfiguration;
-	}
-
 	/**
 	 * Sets the directory to which the distribution/s should be downloaded.
 	 * Defaults to the system property <code>java.io.tmpdir</code>.
@@ -134,47 +101,29 @@ public class Downloads {
      */
 	public List<Distribution> fetch(Product product, String buildNumber, String buildDate, License...licenses) throws MojoExecutionException {
 
-		try {
-			setup();
-			login();
-			
-			List<Distribution> result = new ArrayList<Distribution>();
-			
-			for (License license : licenses) {
-				Distribution distribution = Distribution.get(product, license);
-				download(distribution, buildNumber, buildDate);
-				result.add(distribution);
-			}
-			logout();
+		List<Distribution> result = new ArrayList<Distribution>();
+		
+		for (License license : licenses) {
+			Distribution distribution = Distribution.get(product, license);
+			download(distribution, buildNumber, buildDate);
+			result.add(distribution);
+		}
 
-			return result;
+		return result;
 			
-		} finally {
-	        httpClient.getConnectionManager().shutdown();
-	    }
 	}
 
 	public String findCurrentBuild(Distribution distribution, String buildNumber) throws MojoExecutionException {
 
-        try {
-            setup();
-            login();
-            
-            String url = distribution.getRemoteIndex(buildNumber, null);
-            String selector = "a[href~=[0-9]{4}-[0-9]{2}-[0-9]{2}]";
-            
-            String[] links = list(url, selector);
-            
-            logout();
+        String url = distribution.getRemoteIndex(buildNumber, null);
+        String selector = "a[href~=[0-9]{4}-[0-9]{2}-[0-9]{2}]";
+        
+        String[] links = list(url, selector);
 
-            if (links.length > 0) {
-                return links[0];
-            } else {
-                return null;
-            }
-            
-        } finally {
-            httpClient.getConnectionManager().shutdown();
+        if (links.length > 0) {
+            return links[0];
+        } else {
+            return null;
         }
     }
 	
@@ -206,7 +155,7 @@ public class Downloads {
 			HttpResponse response;
 			
 			try {			
-				response = httpClient.execute(host, httpget);
+				response = httpWorker.execute(httpget);
 			} catch (Exception e) {
 				throw new MojoExecutionException("Error issuing GET request for bundle at '" + httpget + "'", e);
 			}
@@ -248,8 +197,8 @@ public class Downloads {
 		
 		try {
 		
-			LOGGER.debug("Requesting list of files from '{}{}'", DOMAIN, url);
-			response = httpClient.execute(host, request);
+			LOGGER.debug("Requesting list of files from '{}{}'", httpWorker.getHostName(), url);
+			response = httpWorker.execute(request);
 		
 		} catch (Exception e) {
 			throw new MojoExecutionException("Error issuing GET request for bundle at '" + request + "'", e);
@@ -277,133 +226,11 @@ public class Downloads {
 		}
 		
 		if (result.isEmpty()) {
-			String msg = String.format("No downloads found at '%s%s'.  Response from server: \n\n%s\n", DOMAIN, url, doc.html());
+			String msg = String.format("No downloads found at '%s%s'.  Response from server: \n\n%s\n", httpWorker.getHostName(), url, doc.html());
 			LOGGER.warn(msg);
 		}
 		
 		return result.toArray(new String[0]);
 	}
 	
-	/**
-	 * If {@link #credentials} have been supplied, uses them to autthenticate to the isomorphic web site,
-	 * allowing download of protected resources.
-	 * 
-	 * @throws ClientProtocolException
-	 * @throws IOException
-	 */
-	private void login() throws MojoExecutionException {
-
-		if (credentials == null) {
-			return;
-		}
-		
-		String username = credentials.getUserName();
-		String password = credentials.getPassword();
-		
-		LOGGER.debug("Authenticating to '{}' with username: '{}'", DOMAIN + LOGIN_URL, username);
-		
-        HttpPost login = new HttpPost(LOGIN_URL);
-
-        List <NameValuePair> nvps = new ArrayList <NameValuePair>();
-        nvps.add(new BasicNameValuePair("USERNAME", username));
-        nvps.add(new BasicNameValuePair("PASSWORD", password));
-
-    	try {
-			login.setEntity(new UrlEncodedFormEntity(nvps));
-			HttpResponse response = httpClient.execute(host, login);
-			EntityUtils.consume(response.getEntity());
-		} catch (IOException e) {
-			throw new MojoExecutionException("Error during POST request for authentication", e);
-		}
-	}
-	
-	/**
-	 * Logs off at smartclient.com.
-	 *  
-	 * @throws ClientProtocolException
-	 * @throws IOException
-	 */
-	private void logout() {
-        HttpPost logout = new HttpPost(LOGOUT_URL);
-        LOGGER.debug("Logging off at '{}'", DOMAIN + LOGOUT_URL);
-        try {
-	        HttpResponse response = httpClient.execute(host, logout);
-	        EntityUtils.consume(response.getEntity());
-		} catch (Exception e) {
-			LOGGER.warn("Error at logout ", e);
-		}	
-	}
-	
-	/**
-	 * Configures the {@link #httpClient}, specifically with the current {@link #proxyConfiguration}. 
-	 * 
-	 * @throws MojoExecutionException
-	 */
-	private void setup() throws MojoExecutionException {
-		try {
-			if (proxyConfiguration != null && isProxied(proxyConfiguration) ) {
-				if (proxyConfiguration.getUsername() != null) {
-					httpClient.getCredentialsProvider().setCredentials(
-						new AuthScope(proxyConfiguration.getHost(), proxyConfiguration.getPort()),
-						new UsernamePasswordCredentials(proxyConfiguration.getUsername(), proxyConfiguration.getPassword()));	
-				}
-				HttpHost proxy = new HttpHost(proxyConfiguration.getHost(), proxyConfiguration.getPort());
-				httpClient.getParams().setParameter(ConnRoutePNames.DEFAULT_PROXY, proxy);
-			}
-		} catch (Exception e) {
-			throw new MojoExecutionException("Error obtaining Maven settings", e);
-		}
-	}
-	
-	/**
-	 * Adapted from the Site plugin's AbstractDeployMojo to allow http operations through proxy.
-	 * <p>
-	 * Refer to
-	 * http://maven.apache.org/guides/mini/guide-proxies.html
-	 * <br>
-	 * http://maven.apache.org/plugins/maven-site-plugin/xref/org/apache/maven/plugins/site/AbstractDeployMojo.html.
-	 */
-	private boolean isProxied(Proxy proxyConfig) throws MalformedURLException {
-	    String nonProxyHostsAsString = proxyConfig.getNonProxyHosts();
-
-		for (String nonProxyHost : StringUtils.split(nonProxyHostsAsString, ",;|")) {
-			
-			if (StringUtils.contains(nonProxyHost, "*")) {
-				
-				// Handle wildcard at the end, beginning or middle of the nonProxyHost
-				final int pos = nonProxyHost.indexOf('*');
-				String nonProxyHostPrefix = nonProxyHost.substring(0, pos);
-				String nonProxyHostSuffix = nonProxyHost.substring(pos + 1);
-
-				// prefix*
-				if (StringUtils.isNotEmpty(nonProxyHostPrefix)
-						&& DOMAIN.startsWith(nonProxyHostPrefix)
-						&& StringUtils.isEmpty(nonProxyHostSuffix)) {
-
-					return false;
-				}
-				
-				// *suffix
-				if (StringUtils.isEmpty(nonProxyHostPrefix)
-						&& StringUtils.isNotEmpty(nonProxyHostSuffix)
-						&& DOMAIN.endsWith(nonProxyHostSuffix)) {
-					
-					return false;
-				}
-				
-				// prefix*suffix
-				if (StringUtils.isNotEmpty(nonProxyHostPrefix)
-						&& DOMAIN.startsWith(nonProxyHostPrefix)
-						&& StringUtils.isNotEmpty(nonProxyHostSuffix)
-						&& DOMAIN.endsWith(nonProxyHostSuffix)) {
-					
-					return false;
-				}
-
-			} else if (DOMAIN.equals(nonProxyHost)) {
-				return false;
-			}
-		}
-	    return true;
-	}
 }

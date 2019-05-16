@@ -6,13 +6,11 @@ import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
-import org.apache.maven.settings.Server;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.deployment.DeployRequest;
 import org.eclipse.aether.deployment.DeploymentException;
 import org.eclipse.aether.repository.Authentication;
 import org.eclipse.aether.repository.RemoteRepository;
-import org.eclipse.aether.util.repository.AuthenticationBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -92,30 +90,4 @@ public final class DeployMojo extends AbstractPackagerMojo {
 		}		
 	}
 	
-	/**
-	 * Returns user credentials for the server with the given id, as kept in Maven
-	 * settings.
-	 * <p>
-	 * Refer to http://maven.apache.org/settings.html#Servers
-	 * 
-	 * @param serverId the id of the server containing the authentication credentials
-	 * @return the Authentication credentials for the given server with the given id
-	 * 
-     */
-    protected Authentication getAuthentication(String serverId) {
-		
-		Authentication authentication = null;
-		Server server = getDecryptedServer(serverId);
-		
-		if (server != null) {
-	    	authentication = new AuthenticationBuilder()
-				.addUsername(server.getUsername())
-				.addPassword(server.getPassword())
-				.addPrivateKey(server.getPrivateKey(), server.getPassphrase())
-				.build();
-		}
-		
-		return authentication;
-	}
-
 }

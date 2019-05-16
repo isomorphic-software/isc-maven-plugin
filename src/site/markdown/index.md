@@ -21,7 +21,7 @@ Prior to SmartGWT version 4.1 / SmartClient version 10.1, Isomorphic Software pr
 
 The SmartClient/SmartGWT JARs you'll find in any SDK download are just like any other JAR - you could deploy them to your own Maven repositories with the maven-deploy-plugin's [deploy-file](http://maven.apache.org/plugins/maven-deploy-plugin/deploy-file-mojo.html) goal.  There are a lot of steps involved, though, to do that the right way for so many artifacts (version 4.1 of the SmartGWT eval bundle contains more than 20 of them).
 
-This plugin, based on work done previously in a user-contributed [google code plugin](http://code.google.com/p/smartgwt-maven-plugin/), is meant to provide a community-based effort to simplify and automate the manual process, by providing one-step
+This plugin, based on work done previously in a user-contributed [google code plugin](http://code.google.com/p/smartgwt-maven-plugin/), has historically been focused on providing a community-based effort to simplify and automate the manual process, by providing one-step
 
 * Download and extraction of all distributions you're entitled to under your Isomorphic license agreement (i.e., any optional modules are downloaded for you in the same step)
 
@@ -34,14 +34,19 @@ This plugin, based on work done previously in a user-contributed [google code pl
 * Installation of each resulting SmartClient/SmartGWT artifact into your local repository, complete with javadoc attachments where applicable
 
 * Deployment of each resulting SmartClient/SmartGWT artifact into your own [repository manager](http://maven.apache.org/repository-management.html), complete with javadoc attachments (created by plugin) where applicable
+   
 
 ###Goals Overview
 
-In most cases, all of this is accomplished by using one or both of the following goals from a command line:
+Installation and upgrades of the framework runtime are easily accomplished by using one or both of the following goals from a command line:
 
 [isc:install](./install-mojo.html) - To install all of a product's artifacts to your local repository
 
 [isc:deploy](./deploy-mojo.html) - To deploy all of a product's artifacts to your repository manager
+
+Other goals aim to simplifying the use of additional products & services:  
+
+[isc:reify](./reify-import-mojo.html) - To import project / screen definitions from [Reify] (https://www.reify.com/).  
 
 ###Usage
 
@@ -49,4 +54,4 @@ Instructions covering the most common cases can be found on the [usage page](./u
 
 The plugin is meant to be as easy to use as it can be, so the requisite [FAQ](./faq.html) is pretty short at the moment.  If you're having a problem that is not addressed here, please refer to the [wiki entry](http://isomorphic.atlassian.net/wiki/display/Main/Using+Maven+with+SmartGWT) on the Isomorphic public wiki, where users are encouraged to submit additional examples, tips, errata, etc.   
 
-Finally, the [SmartClient Forums](http://forums.smartclient.com/) are an appopriate place to ask questions, provide feedback, and so on.
+Finally, the [SmartClient Forums](http://forums.smartclient.com/) are an appropriate place to ask questions, provide feedback, and so on.
