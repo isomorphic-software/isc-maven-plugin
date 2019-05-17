@@ -51,6 +51,7 @@ public class ArchiveUtils {
 	 * 
 	 * @param directory the directory containing the content to be xzipped up
 	 * @param output the zip file to be written to
+	 * @throws IOException when any I/O error occurs
 	 */
 	public static void jar(File directory, File output) throws IOException {
 		Manifest manifest = new Manifest();
@@ -68,7 +69,7 @@ public class ArchiveUtils {
 	 * 
 	 * @param directory the directory containing the content to be xzipped up
 	 * @param output the zip file to be written to
-	 * @throws IOException
+	 * @throws IOException when any I/O error occurs
 	 */
 	public static void zip(File directory, File output) throws IOException {
 		output.getParentFile().mkdirs();
@@ -82,7 +83,7 @@ public class ArchiveUtils {
 	 * 
 	 * @param source The file to be unzipped
 	 * @param target The directory to which the source file should be unzipped
-	 * @throws IOException
+	 * @throws IOException when any I/O error occurs
 	 */
 	public static void unzip(File source, File target) throws IOException {
 		
@@ -140,7 +141,7 @@ public class ArchiveUtils {
 	 * 
 	 * @param oldValue the existing path
 	 * @param newValue the value to use for the new path, including optional tokens
-	 * @return
+	 * @return the new path
 	 */
 	public static String rewritePath(String oldValue, String newValue) {
 
@@ -185,11 +186,6 @@ public class ArchiveUtils {
 	/**
 	 * Steps common to archiving both zip and jar files, which include reading files from disk and using
 	 * their contents to create {@link ZipEntry ZipEntries} and writing them to a ZipOutputStream.
-	 * 
-	 * @param root
-	 * @param source
-	 * @param target
-	 * @throws IOException
 	 */
 	private static void zip(File root, File source, ZipOutputStream target) throws IOException {
 		String relativePath = root.toURI().relativize(source.toURI()).getPath().replace("\\", "/");

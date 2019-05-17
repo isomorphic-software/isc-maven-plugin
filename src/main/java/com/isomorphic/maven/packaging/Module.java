@@ -75,8 +75,8 @@ public class Module extends AbstractArtifact implements Comparable<Module> {
 	
 	/**
 	 * Convenience method for attaching {@link SubArtifact SubArtifacts} to this Artifact.
-	 * @param file
-	 * @param classifier
+	 * @param file The file for this artifact, may be {@code null} if none.
+     * @param classifier The classifier for this artifact, may be {@code null} if none.
 	 */
 	public void attach(File file, String classifier) {
 		subs.add(new SubArtifact(this, classifier, FilenameUtils.getExtension(file.getName()), file));

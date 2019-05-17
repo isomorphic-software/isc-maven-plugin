@@ -10,7 +10,6 @@ import org.apache.http.HttpResponse;
 import org.apache.http.NameValuePair;
 import org.apache.http.auth.AuthScope;
 import org.apache.http.auth.UsernamePasswordCredentials;
-import org.apache.http.client.ClientProtocolException;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpPost;
 import org.apache.http.client.methods.HttpRequestBase;
@@ -25,7 +24,7 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 /**
- * A trivial convenience class, useful for login & logout operations on SmartClient & Reify 
+ * A trivial convenience class, useful for login / logout operations on SmartClient and Reify 
  * sites.  Includes support for proxy servers.
  */
 public class HttpRequestManager {
@@ -42,10 +41,12 @@ public class HttpRequestManager {
 	private DefaultHttpClient httpClient = new DefaultHttpClient();
 	
 	/**
-	 * Constructor taking the credentials needed for authentication on smartclient.com. 
+	 * Constructor taking the host, login credentials, and any proxy needed to reach the given host. 
 	 * 
+	 * @param host An HttpHost representing the target site.            
 	 * @param credentials The credentials needed for authentication on smartclient.com.
-	 * @throws MojoExecutionException 
+	 * @param proxyConfiguration A Proxy configuration that can be used to set up the httpClient used during all communication to the server by this object
+	 * @throws MojoExecutionException if there is any error during the attempt to detect and set up any proxy
 	 */
 	public HttpRequestManager(HttpHost host, UsernamePasswordCredentials credentials, Proxy proxyConfiguration) throws MojoExecutionException {
 		this.host = host;
@@ -80,8 +81,7 @@ public class HttpRequestManager {
 	 * If {@link #credentials} have been supplied, uses them to authenticate to the isomorphic web site,
 	 * allowing download of protected resources.
 	 * 
-	 * @throws ClientProtocolException
-	 * @throws IOException
+	 * @throws MojoExecutionException on any error during login
 	 */
 	public void login() throws MojoExecutionException {
 
@@ -113,9 +113,6 @@ public class HttpRequestManager {
 
 	/**
 	 * Logs off at smartclient.com.
-	 *  
-	 * @throws ClientProtocolException
-	 * @throws IOException
 	 */
 	public void logout() {
 	    HttpPost logout = new HttpPost(logoutUrl);

@@ -41,6 +41,7 @@ public class LoggingCountingOutputStream extends CountingOutputStream {
      * Constructs a new CountingOutputStream.
      *
      * @param out the OutputStream to write to
+     * @param expectedByteCount the number of bytes expected in the stream
      */
     public LoggingCountingOutputStream(final OutputStream out, final long expectedByteCount) {
         super(out);

@@ -49,6 +49,20 @@ Most users will need to add some or all of the following entries to their [Maven
                     <repositoryId>repository-manager</repositoryId>
                     <repositoryUrl>http://nexus.corp.int/nexus/content/repositories/thirdparty/</repositoryUrl>
                 </properties>
+                <pluginRepositories>
+    [5]             <pluginRepository>
+                        <id>sonatype-snapshots</id>
+                        <name>Sonatype Release Snapshots</name>
+                        <releases>
+                            <enabled>false</enabled>
+                        </releases>
+                        <snapshots>
+                            <enabled>true</enabled>
+                        </snapshots>
+                        <url>https://oss.sonatype.org/content/repositories/snapshots/</url>
+                        <layout>default</layout>
+                    </pluginRepository
+                </pluginRepositories>
             </profile>
         </profiles>
     
@@ -62,3 +76,9 @@ Most users will need to add some or all of the following entries to their [Maven
 3. Another server entry, containing the credentials you would use to [deploy](../deploy-mojo.html) a file to your own repository manager.
     
 4. A [profile](http://maven.apache.org/ref/2.2.1/maven-settings/settings.html#class_profile) containing configuration values to be used at goal execution, typically activated with a -P switch.  Note that system properties can be used to complement or override values provided in the profile.
+
+5. A [pluginRepository](https://maven.apache.org/pom.html#Plugin_Repositories) entry, only necessary if and when you want to [test a development version of the plugin](https://maven.apache.org/guides/development/guide-testing-development-plugins.html).  Note that this may require use of the fully-qualified plugin name and version.  e.g.,
+
+    ```
+    mvn com.isomorphic:isc-maven-plugin:1.4.0-SNAPSHOT:reify-import -Pisc
+    ```

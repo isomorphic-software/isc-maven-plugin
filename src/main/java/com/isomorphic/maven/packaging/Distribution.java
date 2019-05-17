@@ -346,8 +346,8 @@ public final class Distribution {
 	 * <p>
 	 * /builds/SmartGWT/4.1d/EnterpriseEval/2014-01-01
 	 * 
-	 * @param buildNumber
-	 * @param buildDate
+	 * @param buildNumber  the buildNumber as found in the download url.  e.g., 4.1d
+	 * @param buildDate the buildDate as found in the download url.  e.g., 2014-01-01
 	 * @return the URL representing the location of the distribution's "remote index", or download page.
 	 */
 	protected String getRemoteIndex(String buildNumber, String buildDate) {

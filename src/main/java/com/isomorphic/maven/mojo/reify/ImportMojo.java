@@ -63,8 +63,6 @@ import freemarker.template.TemplateExceptionHandler;
  * To encourage recommended usage, the reify-import goal takes steps to detect local changes 
  * and fail when any are found.  Refer to the {@link #skipOverwriteProtection}
  * parameter for details.
- * <p>
- * 
  */
 // Set requiresProject: false so that we can run the whole thing from an Ant project w/ no POM
 @Mojo(name="reify-import", requiresProject=false)

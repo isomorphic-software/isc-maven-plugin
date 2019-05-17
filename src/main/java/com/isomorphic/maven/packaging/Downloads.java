@@ -56,10 +56,9 @@ public class Downloads {
 	private Boolean overwriteExistingFiles = Boolean.FALSE;
 	
 	/**
-	 * Constructor taking the credentials needed for authentication on smartclient.com. 
+	 * Constructor taking the request manager used to communicate with smartclient.com. 
 	 * 
-	 * @param credentials The credentials needed for authentication on smartclient.com.
-	 * @throws MojoExecutionException 
+	 * @param worker the request manager used to communicate with smartclient.com.
 	 */
 	public Downloads(HttpRequestManager worker) {
 		httpWorker = worker;
@@ -79,7 +78,7 @@ public class Downloads {
 	 * If true, downloads files whether they already exist locally or not.  Skips
 	 * the download otherwise.  Defaults to false. 
 	 * 
-	 * @param overwriteExistingFiles
+	 * @param overwriteExistingFiles true if files should be overwritten, false otherwise.
 	 */
 	public void setOverwriteExistingFiles(Boolean overwriteExistingFiles) {
 		this.overwriteExistingFiles = overwriteExistingFiles;
