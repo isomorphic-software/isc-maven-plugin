@@ -52,13 +52,11 @@ import freemarker.template.TemplateExceptionHandler;
 /**
  * Provides for single-step download and extraction of assets hosted on the Reify platform.
  * While there is nothing to prevent a user from modifying the imported resources, changes 
- * should almost always be made using Reify and then re-imported.
- * <p>
- * If necessary, use the API (e.g., RPCManager.createScreen, Canvas.getByLocalId) to modify 
- * imported screen definitions at runtime.
- * <p>
- * Imported MockDataSources can be replaced using e.g., SQLDataSources having the same ID in
- * another directory - there is no reason to modify the contents of the 'mock' subdirectory.
+ * should almost always be made using Reify and then re-imported. If necessary, use the API 
+ * (e.g., RPCManager.createScreen, Canvas.getByLocalId) to modify imported screen definitions 
+ * at runtime.  Imported MockDataSources can simply be replaced using e.g., SQLDataSources 
+ * having the same ID in another directory - there is no reason to modify the contents of the 
+ * 'mock' subdirectory.
  * <p> 
  * To encourage recommended usage, the reify-import goal takes steps to detect local changes 
  * and fail when any are found.  Refer to the {@link #skipOverwriteProtection}
