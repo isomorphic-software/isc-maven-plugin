@@ -44,7 +44,7 @@ Installation and upgrades of the framework runtime are easily accomplished by us
 
 [isc:deploy](./deploy-mojo.html) - To deploy all of a product's artifacts to your repository manager
 
-Other goals aim to simplifying the use of additional products & services:  
+Other goals aim to simplify the use of additional products & services:  
 
 [isc:reify](./reify-import-mojo.html) - To import project / screen definitions from [Reify] (https://www.reify.com/).  
 

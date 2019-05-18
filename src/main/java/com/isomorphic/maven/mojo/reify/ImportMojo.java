@@ -155,7 +155,7 @@ public class ImportMojo extends AbstractBaseMojo {
 		// undocumented parameter to allow for testing against QA environment
 		String hostname = System.getProperty("reify-hostname");
 		if (hostname == null) {
-			hostname = "app.reify.com";
+			hostname = "create.reify.com";
 		}
 		host = new HttpHost(hostname, -1, "https");
 
