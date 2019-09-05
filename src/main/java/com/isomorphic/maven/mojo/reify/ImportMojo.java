@@ -5,14 +5,19 @@ import java.io.FileOutputStream;
 import java.io.FileWriter;
 import java.io.OutputStream;
 import java.io.StringWriter;
+import java.net.URI;
 import java.net.URLEncoder;
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.apache.commons.io.FileUtils;
+import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
+import org.apache.commons.lang3.StringEscapeUtils;
 import org.apache.http.HttpEntity;
 import org.apache.http.HttpHost;
 import org.apache.http.HttpResponse;
@@ -21,6 +26,7 @@ import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.http.client.entity.UrlEncodedFormEntity;
 import org.apache.http.client.methods.HttpGet;
 import org.apache.http.client.methods.HttpPost;
+import org.apache.http.client.utils.URIUtils;
 import org.apache.http.message.BasicNameValuePair;
 import org.apache.http.util.EntityUtils;
 import org.apache.maven.plugin.MojoExecutionException;
@@ -32,12 +38,15 @@ import org.dom4j.Document;
 import org.dom4j.DocumentHelper;
 import org.dom4j.Element;
 import org.dom4j.Node;
+import org.dom4j.XPath;
 import org.dom4j.io.OutputFormat;
 import org.dom4j.io.SAXReader;
 import org.dom4j.io.XMLWriter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Sets;
 import com.google.common.hash.Hashing;
 import com.google.common.io.Files;
 import com.isomorphic.maven.mojo.AbstractBaseMojo;
@@ -48,6 +57,8 @@ import com.isomorphic.maven.util.LoggingCountingOutputStream;
 import freemarker.cache.ClassTemplateLoader;
 import freemarker.template.Configuration;
 import freemarker.template.TemplateExceptionHandler;
+import net.htmlparser.jericho.OutputDocument;
+import net.htmlparser.jericho.Source;
 
 /**
  * Provides for single-step download and extraction of assets hosted on the Reify platform.
@@ -96,7 +107,35 @@ public class ImportMojo extends AbstractBaseMojo {
     private File webappDir;
 
     /**
-     * The directory to which exported DataSources should ultimately reside, relative to {@link ImportMojo#webappDir}.  
+     * If true, the import process will create a JSP launcher that loads the given project/s.
+     * The file's name and location can be configured via {@link #testJspPathname}.
+     */
+    @Parameter(property = "includeTestJsp", defaultValue = "false")
+    private boolean includeTestJsp;
+
+    /**
+     * The name and relative path of the JSP launcher to be created when 
+     * {@link #includeTestJsp} is true. 
+     */
+    @Parameter(property = "testJspPathname", defaultValue = "${projectName}.run.jsp")
+    private String testJspPathname;
+    
+    /**
+     * If true, the import process will create an HTML launcher that loads the given project/s.
+     * The file's name and location can be configured via {@link #testHtmlPathname}. 
+     */
+    @Parameter(property = "includeTestHtml", defaultValue = "false")
+    private boolean includeTestHtml;
+
+    /**
+     * The name and relative path of the HTML launcher to be created when 
+     * {@link #includeTestHtml} is true. 
+     */
+    @Parameter(property = "testHtmlPathname", defaultValue = "${projectName}.run.html")
+    private String testHtmlPathname;
+    
+    /**
+     * The directory in which exported DataSources should ultimately reside, relative to {@link ImportMojo#webappDir}.  
      * Note that this will need to conform to the webapp's server.properties <code>project.datasources</code> configuration.
      * Also note that MockDataSources will be imported to a 'mock' subdirectory.  e.g., WEB-INF/ds/mock.
      * 
@@ -122,6 +161,24 @@ public class ImportMojo extends AbstractBaseMojo {
      */
     @Parameter(property="projectFileDir", defaultValue = "WEB-INF/ui")
     private String projectFileDir;
+    
+    /**
+     * If true, the project's welcome files will be modified to include a script block that loads the imported project.
+     * Note that the loaded project is not drawn - for that, refer to {@link #drawOnWelcomeFiles}.
+     * Welcome files are determined by scanning the project's web.xml file for the standard welcome-files declaration.  
+     * If none is found, the webroot is searched for files named index.jsp and index.html.
+     * <p>
+     * Subsequent imports of other projects append the newly imported project name to the existing.  
+     */
+    @Parameter(property="modifyWelcomeFiles", defaultValue = "false")
+    private boolean modifyWelcomeFiles;
+    
+    /**
+     * Like {@link #modifyWelcomeFiles}, except this variant will draw the project's first screen when all of its screens
+     * have been loaded.
+     */
+    @Parameter(property="drawOnWelcomeFiles", defaultValue = "false")
+    private boolean drawOnWelcomeFiles;
     
     /**
      * The name of the project as its known by the reify.com environment.
@@ -152,12 +209,12 @@ public class ImportMojo extends AbstractBaseMojo {
 	
 	public ImportMojo() {
 
-		// undocumented parameter to allow for testing against QA environment
-		String hostname = System.getProperty("reify-hostname");
-		if (hostname == null) {
-			hostname = "create.reify.com";
+		// undocumented parameters to allow for testing against QA environment
+		String uri = System.getProperty("host");
+		if (uri == null) {
+			uri = "https://create.reify.com";
 		}
-		host = new HttpHost(hostname, -1, "https");
+		host = URIUtils.extractHost(URI.create(uri));
 
 		// we'll use a freemarker template to construct the request for project metadata
         ClassTemplateLoader ctl = new ClassTemplateLoader(getClass(), "");
@@ -212,6 +269,11 @@ public class ImportMojo extends AbstractBaseMojo {
 
 			// and copy the result to application source
 			FileUtils.copyDirectory(unpacked, webappDir);
+			
+			// finally, if the user has for some reason decided they want us to mangle their source, do so
+			if (modifyWelcomeFiles || drawOnWelcomeFiles) {
+				modifyWelcomeFiles();
+			}
 			
         } catch (MojoExecutionException e) {
         	throw e;
@@ -329,7 +391,7 @@ public class ImportMojo extends AbstractBaseMojo {
 	private File downloadProjectArchive(Document project) throws Exception {
         
 		Map<String, Object> context = new HashMap<String, Object>();
-    	
+    	context.put("projectName", projectName);
     	context.put("datasourcesDir", datasourcesDir);
     	context.put("uiDir", uiDir);
     	context.put("projectFileDir", projectFileDir);
@@ -339,11 +401,23 @@ public class ImportMojo extends AbstractBaseMojo {
 		context.put("screens", getScreenNames(project));
 		context.put("datasources", getDataSourceNames(project));
 
-    	StringWriter writer = new StringWriter();
-		freemarkerConfig.getTemplate("transaction.ftl").process(context, writer);
+		StringWriter jspWriter  = new StringWriter();
+		freemarkerConfig.getTemplate("TestJspFileContent.ftl").process(context, jspWriter);
+		context.put("includeTestJsp",  includeTestJsp);
+		context.put("testJspPathname", testJspPathname);
+		context.put("jspFileContent", StringEscapeUtils.escapeHtml4(jspWriter.toString()));
+		
+		StringWriter htmlWriter  = new StringWriter();
+		freemarkerConfig.getTemplate("TestHtmlFileContent.ftl").process(context, htmlWriter);
+		context.put("includeTestHtml",  includeTestHtml);
+		context.put("testHtmlPathname", testHtmlPathname);
+		context.put("htmlFileContent", StringEscapeUtils.escapeHtml4(htmlWriter.toString()));			
+		
+    	StringWriter messageWriter = new StringWriter();
+		freemarkerConfig.getTemplate("ProjectExportRequestParameter.ftl").process(context, messageWriter);
 
 		List<NameValuePair> params = new ArrayList<NameValuePair>();
-	    params.add(new BasicNameValuePair("_transaction", writer.toString()));
+	    params.add(new BasicNameValuePair("_transaction", messageWriter.toString()));
 	    
 		HttpPost request = new HttpPost("/isomorphic/IDACall?isc_rpc=1");
 	    request.setEntity(new UrlEncodedFormEntity(params));
@@ -410,6 +484,97 @@ public class ImportMojo extends AbstractBaseMojo {
 		writer.write(project);
 		writer.flush();
 		writer.close();
+	}
+	
+	private void modifyWelcomeFiles() throws Exception {
+
+		File welcomeFilesConfig = new File(webappDir, "WEB-INF/web.xml");
+		if (! welcomeFilesConfig.exists()) {
+			String msg = String.format("No web.xml found at '%s'", welcomeFilesConfig.getCanonicalPath());
+			throw new RuntimeException(msg);
+		}
+
+		List<File> welcomeFiles = new ArrayList<File>();
+		
+		SAXReader reader = new SAXReader();
+        Document webXml = reader.read(welcomeFilesConfig);
+        
+        XPath xpath = webXml.createXPath("//jee:welcome-file");
+        xpath.setNamespaceURIs(ImmutableMap.of("jee", "http://java.sun.com/xml/ns/javaee"));
+        List<Node> list = xpath.selectNodes(webXml);
+        for (Node node : list) {
+        	String val = node.getStringValue();
+        	File file = FileUtils.getFile(webappDir, val);
+        	if (! file.exists()) {
+        		LOGGER.warn("Welcome file '{}' not found.  Skipping.", val);
+        		continue;
+        	}
+        	welcomeFiles.add(file);
+        }
+        if (welcomeFiles.isEmpty()) {
+        	File jsp = FileUtils.getFile(webappDir, "index.jsp");
+        	File html = FileUtils.getFile(webappDir, "index.html");
+        	if (jsp.exists()) {
+        		welcomeFiles.add(jsp);
+        	}
+        	if (html.exists()) {
+        		welcomeFiles.add(html);
+        	}
+        }
+        
+        for (File file : welcomeFiles) {
+
+        	String extension = FilenameUtils.getExtension(file.getCanonicalPath()).toLowerCase();
+        	
+        	Source source=new Source(file);
+        	OutputDocument target=new OutputDocument(source);
+        	
+    		net.htmlparser.jericho.Element scriptElement = 
+    				source.getElementById("isc-maven-plugin.reify-import.modifyWelcomeFiles");
+
+        	Set<String> projectNames = new LinkedHashSet<String>();
+        	if (scriptElement != null) {
+	    		if ("jsp".equals(extension)) {
+	    			
+	    			String html = scriptElement.toString().trim();
+	    			int start = html.toLowerCase().indexOf("name=\"") + 6;
+					int end = html.indexOf("\"", start);
+					String val = html.substring(start, end);
+					
+					projectNames.addAll(Sets.newHashSet(val.split(",")));
+					
+	    		} else {
+	    			
+	    			String src = scriptElement.getAttributeValue("src");
+	    			int start = src.indexOf("projectName=") + 12;
+	    			int end = src.indexOf("&", start);
+					String val = src.substring(start, end);
+					
+					projectNames.addAll(Sets.newHashSet(val.split(",")));
+	    		}
+    		}
+        	projectNames.add(projectName);
+
+			String template = "LoadProjectScriptFragment.ftl";
+			if ("jsp".equals(extension)) {
+				template = "LoadProjectTagFragment.ftl";
+			}
+			
+    		Map context = ImmutableMap.of("projects", projectNames.toArray(), "draw", drawOnWelcomeFiles);
+    		StringWriter tagWriter = new StringWriter();
+    		freemarkerConfig.getTemplate(template).process(context, tagWriter);
+    		
+    		if (scriptElement != null) {
+    			target.replace(scriptElement, tagWriter.toString());
+    		} else {
+    			
+    			// for now just drop the script at the end of the body
+    			int index = source.getFirstElement("body").getEndTag().getBegin();
+    			target.insert(index, tagWriter.toString());
+    		}
+    		
+        	FileUtils.write(file, target.toString());
+        }
 	}
 	
 	/*
@@ -504,5 +669,39 @@ public class ImportMojo extends AbstractBaseMojo {
 	protected void setProxy(Proxy proxy) {
 		this.proxy = proxy;
 	}
+
+	protected void setServerId(String serverId) {
+		this.serverId = serverId;
+	}
+
+	protected void setIncludeTestJsp(boolean includeTestJsp) {
+		this.includeTestJsp = includeTestJsp;
+	}
+
+	protected void setTestJspPathname(String testJspPathname) {
+		this.testJspPathname = testJspPathname;
+	}
+
+	protected void setIncludeTestHtml(boolean includeTestHtml) {
+		this.includeTestHtml = includeTestHtml;
+	}
+
+	protected void setTestHtmlPathname(String testHtmlPathname) {
+		this.testHtmlPathname = testHtmlPathname;
+	}
+
+	protected void setModifyWelcomeFiles(boolean modifyWelcomeFiles) {
+		this.modifyWelcomeFiles = modifyWelcomeFiles;
+	}
+
+	protected void setDrawOnWelcomeFiles(boolean drawOnWelcomeFiles) {
+		this.drawOnWelcomeFiles = drawOnWelcomeFiles;
+	}
+
+	protected void setSkipOverwriteProtection(boolean skipOverwriteProtection) {
+		this.skipOverwriteProtection = skipOverwriteProtection;
+	}
+	
+	
 	
 }

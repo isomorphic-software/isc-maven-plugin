@@ -11,10 +11,16 @@
                     <datasourcesDir>${datasourcesDir}</datasourcesDir>
                     <includeTestData xsi:type="xsd:boolean">false</includeTestData>
                     <uiDir>${uiDir}</uiDir>
-                    <includeJSP xsi:type="xsd:boolean">false</includeJSP>
-                    <jspFilePath xsi:type="xsd:Object"></jspFilePath>
-                    <includeHTML xsi:type="xsd:boolean">false</includeHTML>
-                    <htmlFilePath xsi:type="xsd:Object"></htmlFilePath>
+                    <includeJSP xsi:type="xsd:boolean">${includeTestJsp?c}</includeJSP>
+                    <jspFilePath xsi:type="xsd:Object">
+                        <path>${testJspPathname}</path>
+                        <content>${jspFileContent}</content>
+                    </jspFilePath>
+                    <includeHTML xsi:type="xsd:boolean">${includeTestHtml?c}</includeHTML>
+                    <htmlFilePath xsi:type="xsd:Object">
+                        <path>${testHtmlPathname}</path>
+                        <content>${htmlFileContent}</content>
+                    </htmlFilePath>
                     <includeProjectFile xsi:type="xsd:boolean">false</includeProjectFile>
                     <projectDir xsi:type="xsd:Object">
                         <path>${projectFileDir}/${projectFileName}</path>
