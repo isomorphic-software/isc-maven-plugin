@@ -46,7 +46,9 @@ Installation and upgrades of the framework runtime are easily accomplished by us
 
 Other goals aim to simplify the use of additional products & services:  
 
-[isc:reify](./reify-import-mojo.html) - To import project / screen definitions from [Reify] (https://www.reify.com/).  
+[isc:reify-import](./reify-import-mojo.html) - To import project / screen definitions from [Reify] (https://www.reify.com/)
+
+[isc:reify-validate](./reify-validate-mojo.html) - To [check](https://www.smartclient.com/smartgwtee-latest/server/javadoc/com/isomorphic/tools/ReifyDataSourceValidator.html) for discrepancies between a project's MockDataSources and its working, or "live", counterparts (e.g., SQLDataSources) commonly found during the design / development cycle.  
 
 ###Usage
 

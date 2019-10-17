@@ -1,5 +1,9 @@
 package com.isomorphic.maven.mojo.reify;
 
+import static com.isomorphic.util.ErrorMessage.Severity.ERROR;
+import static com.isomorphic.util.ErrorMessage.Severity.INFO;
+import static com.isomorphic.util.ErrorMessage.Severity.WARN;
+
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.FileWriter;
@@ -42,8 +46,6 @@ import org.dom4j.XPath;
 import org.dom4j.io.OutputFormat;
 import org.dom4j.io.SAXReader;
 import org.dom4j.io.XMLWriter;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import com.google.common.collect.ImmutableMap;
 import com.google.common.collect.Sets;
@@ -53,6 +55,10 @@ import com.isomorphic.maven.mojo.AbstractBaseMojo;
 import com.isomorphic.maven.util.ArchiveUtils;
 import com.isomorphic.maven.util.HttpRequestManager;
 import com.isomorphic.maven.util.LoggingCountingOutputStream;
+import com.isomorphic.tools.ReifyDataSourceValidator;
+import com.isomorphic.util.ErrorMessage;
+import com.isomorphic.util.ErrorMessage.Severity;
+import com.isomorphic.util.ErrorReport;
 
 import freemarker.cache.ClassTemplateLoader;
 import freemarker.template.Configuration;
@@ -71,13 +77,57 @@ import net.htmlparser.jericho.Source;
  * <p> 
  * To encourage recommended usage, the reify-import goal takes steps to detect local changes 
  * and fail when any are found.  Refer to the {@link #skipOverwriteProtection}
- * parameter for details.
+ * parameter for details.  Further, a validation step (optional, see {@link ImportMojo#skipValidationOnImport}) 
+ * attempts to detect <a href="https://www.smartclient.com/smartgwtee-latest/server/javadoc/com/isomorphic/tools/ReifyDataSourceValidator.html">commonly found discrepancies</a> 
+ * between your MockDataSources and working DataSources.
+ * <p>
+ * The <a href="https://www.smartclient.com/smartclient-latest/isomorphic/system/reference/?id=group..reifyForDevelopers">Reify for Developers</a> 
+ * documentation topic contains further discussion around best practices during the design / development cycle.
+ * <p>
+ * If you've built your project using one of the Maven archetypes for either  
+ * <a href="https://www.smartclient.com/smartgwt-latest/javadoc/com/smartgwt/client/docs/MavenSupport.html">SmartGWT</a>
+ * or
+ * <a href="https://www.smartclient.com/smartclient-latest/isomorphic/system/reference/?id=group..mavenSupport">SmartClient</a>, 
+ * you should have a skeleton configuration in you POM already.  if not, add something like the following:
+ *
+ * <pre>
+ * &lt;pluginManagement&gt;
+ *     &lt;plugins&gt;
+ *         &lt;plugin&gt;
+ *             &lt;groupId&gt;com.isomorphic&lt;/groupId&gt;
+ *             &lt;artifactId&gt;isc-maven-plugin&lt;/artifactId&gt;
+ *             &lt;version&gt;1.4.0-SNAPSHOT&lt;/version&gt;
+ *             &lt;!-- the m2pluginextras dependency will be required when skipValidationOnImport = false --&gt;
+ *             &lt;dependencies&gt;
+ *                 &lt;dependency&gt;
+ *                     &lt;groupId&gt;com.isomorphic.extras&lt;/groupId&gt;
+ *                     &lt;artifactId&gt;isomorphic-m2pluginextras&lt;/artifactId&gt;
+ *                    &lt;version&gt;${smartgwt.version}&lt;/version&gt;
+ *                 &lt;/dependency&gt;       
+ *             &lt;/dependencies&gt;
+ *         &lt;/plugin&gt;
+ *     &lt;/plugins&gt;
+ * &lt;/pluginManagement&gt;                
+ * 
+ * &lt;build&gt;
+ *     &lt;plugins&gt;
+ *       &lt;plugin&gt;
+ *           &lt;groupId&gt;com.isomorphic&lt;/groupId&gt;
+ *           &lt;artifactId&gt;isc-maven-plugin&lt;/artifactId&gt;
+ *           &lt;configuration&gt;
+ *             &lt;smartclientRuntimeDir&gt;${project.parent.build.directory}/gwt/launcherDir/myapplication/sc&lt;/smartclientRuntimeDir&gt;
+ *             &lt;dataSourcesDir&gt;WEB-INF/ds/classic-models&lt;/dataSourcesDir&gt;
+ *           &lt;/configuration&gt;
+ *       &lt;/plugin&gt;
+ *     &lt;/plugins&gt;
+ * &lt;/build&gt;
+ * </pre> 
+ * and check that the SmartClient runtime has been extracted to the configured location 
+ * (via e.g., mvn war:exploded, mvn jetty:run).
  */
 // Set requiresProject: false so that we can run the whole thing from an Ant project w/ no POM
 @Mojo(name="reify-import", requiresProject=false)
 public class ImportMojo extends AbstractBaseMojo {
-
-	private static final Logger LOGGER = LoggerFactory.getLogger(ImportMojo.class);
 
     /**
      * The id of a <a href="http://maven.apache.org/settings.html#Servers">server
@@ -96,7 +146,7 @@ public class ImportMojo extends AbstractBaseMojo {
      * @since 1.4.0
      */
     @Parameter(property = "workdir", defaultValue = "${project.build.directory}/reify")
-    private File workdir;
+    protected File workdir;
     
     /**
      * The directory containing web application sources.
@@ -104,87 +154,154 @@ public class ImportMojo extends AbstractBaseMojo {
      * @since 1.4.0
      */
     @Parameter(property = "webappDir", defaultValue = "${project.basedir}/src/main/webapp")
-    private File webappDir;
+    protected File webappDir;
 
+    /**
+     * The directory containing the Isomorphic runtime.  The default value is appropriate for
+     * the path created by a typical mvn war:exploded invocation.  Alternatively, set this to
+     * the path created by mvn jetty:run, or any other path where an appropriate SmartClient
+     * runtime may be found.  
+     * 
+     * Note that SmartGWT users may need to change the value to something like:
+     * <p>
+     * <code>
+     * ${project.build.directory}/${project.build.finalName}/${gwtModuleName}/sc
+     * </code>
+     * 
+     * @since 1.4.0
+     */
+    @Parameter(property = "smartclientRuntimeDir", defaultValue="${project.build.directory}/${project.build.finalName}/isomorphic")
+    protected File smartclientRuntimeDir;    
+    
     /**
      * If true, the import process will create a JSP launcher that loads the given project/s.
      * The file's name and location can be configured via {@link #testJspPathname}.
-     */
-    @Parameter(property = "includeTestJsp", defaultValue = "false")
-    private boolean includeTestJsp;
-
-    /**
-     * The name and relative path of the JSP launcher to be created when 
-     * {@link #includeTestJsp} is true. 
-     */
-    @Parameter(property = "testJspPathname", defaultValue = "${projectName}.run.jsp")
-    private String testJspPathname;
-    
-    /**
-     * If true, the import process will create an HTML launcher that loads the given project/s.
-     * The file's name and location can be configured via {@link #testHtmlPathname}. 
-     */
-    @Parameter(property = "includeTestHtml", defaultValue = "false")
-    private boolean includeTestHtml;
-
-    /**
-     * The name and relative path of the HTML launcher to be created when 
-     * {@link #includeTestHtml} is true. 
-     */
-    @Parameter(property = "testHtmlPathname", defaultValue = "${projectName}.run.html")
-    private String testHtmlPathname;
-    
-    /**
-     * The directory in which exported DataSources should ultimately reside, relative to {@link ImportMojo#webappDir}.  
-     * Note that this will need to conform to the webapp's server.properties <code>project.datasources</code> configuration.
-     * Also note that MockDataSources will be imported to a 'mock' subdirectory.  e.g., WEB-INF/ds/mock.
      * 
      * @since 1.4.0 
      */
-    @Parameter(property = "datasourcesDir", defaultValue = "WEB-INF/ds")
-    private String datasourcesDir;
+    @Parameter(property = "includeTestJsp", defaultValue = "false")
+    protected boolean includeTestJsp;
+
+    /**
+     * The name (and optional path, relative to {@link #webappDir}) of the JSP launcher to be 
+     * created when {@link #includeTestJsp} is true.
+     * 
+     * @since 1.4.0  
+     */
+    @Parameter(property = "testJspPathname", defaultValue = "${projectName}.run.jsp")
+    protected String testJspPathname;
     
     /**
-     * The directory to which exported screens should ultimately reside, relative to {@link ImportMojo#webappDir}. 
-     * Note that this will need to conform to the webapp's server.properties <code>project.ui</code> configuration.
+     * If true, the import process will create an HTML launcher that loads the given project/s.
+     * The file's name and location can be configured via {@link #testHtmlPathname}.
+     * 
+     * @since 1.4.0  
+     */
+    @Parameter(property = "includeTestHtml", defaultValue = "false")
+    protected boolean includeTestHtml;
+
+    /**
+     * The name (and optional path, relative to {@link #webappDir}) of the HTML launcher to be 
+     * created when {@link #includeTestHtml} is true.
+     * 
+     * @since 1.4.0 
+     */
+    @Parameter(property = "testHtmlPathname", defaultValue = "${projectName}.run.html")
+    protected String testHtmlPathname;
+    
+    /**
+     * The directory, relative to {@link #webappDir}), in which your project's working 
+     * datasources (i.e., other than mocks) reside.
+     * <p>
+     * Note that this will need to conform to the webapp's server.properties 
+     * <code>project.datasources</code> configuration.
+     * 
+     * @since 1.4.0 
+     */
+    @Parameter(property = "dataSourcesDir", defaultValue = "WEB-INF/ds")
+    protected String dataSourcesDir;
+
+    /**
+     * The directory, relative to {@link #webappDir}), in which exported MockDataSources 
+     * should ultimately reside.
+     * <p>
+     * Note that this will need to conform to the webapp's server.properties 
+     * <code>project.datasources</code> configuration.  
+     * 
+     * @since 1.4.0
+     */
+    @Parameter(property = "mockDataSourcesDir", defaultValue = "WEB-INF/ds/mock")
+    protected String mockDataSourcesDir;
+
+    /**
+     * When true, DataSource validation will be skipped following import.  The
+     * {@link ValidateMojo} can still be executed independently at any time.  
+     *  
+     * @since 1.4.0
+     */
+    @Parameter(property = "skipValidationOnImport", defaultValue = "false")
+    protected boolean skipValidationOnImport;    
+    
+    /**
+     * One of INFO, ERROR, WARN that will determine the level of severity tolerated in any 
+     * validation error.  Any error at or above this threshold will result in "BUILD FAILURE".
+     * 
+     * @since 1.4.0
+     */
+    @Parameter(property = "validationFailureThreshold", defaultValue = "ERROR")
+    protected Severity validationFailureThreshold;    
+    
+    /**
+     * The directory in which exported screens should ultimately reside, relative to 
+     * {@link #webappDir}.  Note that this will need to conform to the webapp's 
+     * server.properties <code>project.ui</code> configuration.
      * 
      * @since 1.4.0 
      */
     @Parameter(property = "uiDir", defaultValue = "WEB-INF/ui")
-    private String uiDir;
+    protected String uiDir;
     
     /**
-     * The directory to which the exported project file should ultimately reside, relative to {@link ImportMojo#webappDir}.
-     * Note that this will need to conform to the webapp's server.properties <code>project.project</code> configuration. 
+     * The directory to which the exported project file should ultimately reside, relative to
+     * {@link #webappDir}.  Note that this will need to conform to the webapp's 
+     * server.properties <code>project.project</code> configuration. 
      * 
      * @since 1.4.0 
      */
     @Parameter(property="projectFileDir", defaultValue = "WEB-INF/ui")
-    private String projectFileDir;
+    protected String projectFileDir;
     
     /**
-     * If true, the project's welcome files will be modified to include a script block that loads the imported project.
-     * Note that the loaded project is not drawn - for that, refer to {@link #drawOnWelcomeFiles}.
-     * Welcome files are determined by scanning the project's web.xml file for the standard welcome-files declaration.  
-     * If none is found, the webroot is searched for files named index.jsp and index.html.
+     * If true, the project's welcome files will be modified to include a script block that 
+     * loads the imported project.  Note that the loaded project is not drawn - for that, 
+     * refer to {@link #drawOnWelcomeFiles}.  Welcome files are determined by scanning the 
+     * project's web.xml file for the standard welcome-files declaration.  If none is found, 
+     * the webroot is searched for files named index.jsp and index.html.
      * <p>
-     * Subsequent imports of other projects append the newly imported project name to the existing.  
+     * Subsequent imports of other projects append the newly imported project name to the 
+     * existing one/s.  
+     * 
+     * @since 1.4.0 
      */
     @Parameter(property="modifyWelcomeFiles", defaultValue = "false")
-    private boolean modifyWelcomeFiles;
+    protected boolean modifyWelcomeFiles;
     
     /**
-     * Like {@link #modifyWelcomeFiles}, except this variant will draw the project's first screen when all of its screens
-     * have been loaded.
+     * Like {@link #modifyWelcomeFiles}, except this variant will draw the project's first 
+     * screen when all of its screens have been loaded.
+     * 
+     * @since 1.4.0 
      */
     @Parameter(property="drawOnWelcomeFiles", defaultValue = "false")
-    private boolean drawOnWelcomeFiles;
+    protected boolean drawOnWelcomeFiles;
     
     /**
-     * The name of the project as its known by the reify.com environment.
+     * The name of the project as it's known by the reify.com environment.
+     * 
+     * @since 1.4.0 
      */
     @Parameter(property="projectName", defaultValue = "${project.artifactId}", required=true)
-    private String projectName;
+    protected String projectName;
     private String projectFileName;
     private String zipFileName;
 
@@ -196,6 +313,8 @@ public class ImportMojo extends AbstractBaseMojo {
      * <p>
      * To override this behavior, you may set this parameter value to <code>true</code>, in
      * which case the file will simply be overwritten.  Use this feature at your own risk.
+     * 
+     * @since 1.4.0 
      */
     @Parameter(property="skipOverwriteProtection", defaultValue = "false")
     private boolean skipOverwriteProtection;
@@ -214,7 +333,7 @@ public class ImportMojo extends AbstractBaseMojo {
 		if (uri == null) {
 			uri = "https://create.reify.com";
 		}
-		host = URIUtils.extractHost(URI.create(uri));
+		setHost(uri);
 
 		// we'll use a freemarker template to construct the request for project metadata
         ClassTemplateLoader ctl = new ClassTemplateLoader(getClass(), "");
@@ -260,7 +379,7 @@ public class ImportMojo extends AbstractBaseMojo {
 	    	Document project = downloadProjectDocument();
 	    	File archive = downloadProjectArchive(project);
 
-			LOGGER.info("Importing Reify project assets from download at '{}'...", archive.getCanonicalPath());
+	    	getLog().info(String.format("Importing Reify project assets from download at '%s'...", archive.getCanonicalPath()));
 			File unpacked = new File(workdir, projectName);
 			ArchiveUtils.unzip(archive, unpacked);
 
@@ -275,6 +394,12 @@ public class ImportMojo extends AbstractBaseMojo {
 				modifyWelcomeFiles();
 			}
 			
+			// and validate whatever live datasources exist against the newly imported mocks
+			if (! skipValidationOnImport) {
+				getLog().info("Validating MockDataSources against any working DataSources...");
+				validate();
+			}
+			
         } catch (MojoExecutionException e) {
         	throw e;
 		} catch (Exception e) {
@@ -287,12 +412,67 @@ public class ImportMojo extends AbstractBaseMojo {
 	}
 	
 	/**
+	 * Compares mock DataSources to live, logging findings and throwing an Exception if and 
+	 * when the {@link #validationFailureThreshold} is exceeded.
+	 */
+	protected void validate() {
+		
+		try {
+			
+			ReifyDataSourceValidator validator = new ReifyDataSourceValidator(smartclientRuntimeDir.getCanonicalPath(), webappDir + "/" + dataSourcesDir);
+			validator.setMockDataSourcesBasePath(webappDir + "/" + mockDataSourcesDir);
+
+			List<ErrorReport> result = validator.verify();
+			boolean fail = false;
+			if (! result.isEmpty()) {
+				for (ErrorReport report : result) {
+					for (String key : report.keySet()) {
+						List<ErrorMessage> errors = report.getErrors(key);
+						
+						for (ErrorMessage msg : errors) {
+							
+							String output = null;
+							if (key.equals(report.getDataSourceId())) {
+								output = String.format("%s: %s", report.getDataSourceId(), msg.getErrorString());
+							} else {
+								output = String.format("%s.%s: %s", report.getDataSourceId(), key, msg.getErrorString());
+							}
+							
+							Severity severity = msg.getSeverity();
+							if (severity.compareTo(validationFailureThreshold) >= 0) {
+								fail = true;
+							}
+							
+							if (severity == INFO) {
+								getLog().info(output);
+							}
+							if (msg.getSeverity() == WARN) {
+								getLog().warn(output);
+							}
+							if (msg.getSeverity() == ERROR) {
+								getLog().error(output);
+							}							
+						}
+					}				
+				}
+			} else {
+				getLog().info("No validation errors were found.");
+			}
+			if (fail) {
+				throw new MojoExecutionException("Mock DataSource validation failure.  Please refer to ReifyDataSourceValidator log output for detailed report.");
+			}
+		} catch (Exception e) {
+			throw new RuntimeException(e);
+		}
+	}
+	
+	/**
 	 * Checks for local modifications, as documented at {@link #skipOverwriteProtection}},
 	 * and fails when any local changes are detected.
 	 * <p>
 	 * Note that files are expected in the configured locations - screens in {@link #uiDir}
-	 * and datasources in {@link #datasourcesDir} (or the {@link #datasourcesDir}/mock 
-	 * subdirectory).
+	 * and datasources in {@link #mockDataSourcesDir} / {@link #dataSourcesDir} 
+	 * subdirectories).
 	 * 
  	 * @throws MojoExecutionException when any local changes are detected
  	 * @throws Exception on any other error
@@ -301,7 +481,8 @@ public class ImportMojo extends AbstractBaseMojo {
 		
 		File projectFile = new File(webappDir, projectFileDir + "/" + projectFileName);
 		if (! projectFile.exists()) {
-			LOGGER.info("Project file does not exist at '{}', but will be created during import.", projectFile.getCanonicalPath());
+			//LOGGER.info("Project file does not exist at '{}', but will be created during import.", projectFile.getCanonicalPath());
+			getLog().info(String.format("Project file does not exist at '%s', but will be created during import.", projectFile.getCanonicalPath()));
 			return;
 		}
 
@@ -325,7 +506,7 @@ public class ImportMojo extends AbstractBaseMojo {
         	
         	String actual = Files.asByteSource(file).hash(Hashing.sha256()).toString(); 
         	if (!actual.equals(expected)) {
-        		LOGGER.debug("Checksum mismatch - Expected: '{}' Actual: '{}'", expected, actual);
+        		getLog().debug(String.format("Checksum mismatch - Expected: '%s' Actual: '%s'", expected, actual));
         		throw new MojoExecutionException(String.format(msg, file.getCanonicalPath()));
         	}	        	
 		}
@@ -342,7 +523,7 @@ public class ImportMojo extends AbstractBaseMojo {
         	
         	String actual = Files.asByteSource(file).hash(Hashing.sha256()).toString(); 
         	if (!actual.equals(expected)) {
-        		LOGGER.debug("Checksum mismatch - Expected: '{}' Actual: '{}'", expected, actual);
+        		getLog().debug(String.format("Checksum mismatch - Expected: '%s' Actual: '%s'", expected, actual));
         		throw new MojoExecutionException(String.format(msg, file.getCanonicalPath()));
         	}	        	
 		}
@@ -356,7 +537,7 @@ public class ImportMojo extends AbstractBaseMojo {
 	 */
 	private Document downloadProjectDocument() throws Exception {
 		
-        LOGGER.info("Contacting server for Reify project metadata...");
+		getLog().info("Contacting server for Reify project metadata...");
         
         HttpGet request = new HttpGet("/isomorphic/RESTHandler/hostedProjects?fileName=" + URLEncoder.encode(projectName) + "&isc_dataFormat=xml");
         HttpResponse response = httpWorker.execute(request);
@@ -374,11 +555,36 @@ public class ImportMojo extends AbstractBaseMojo {
 	    	
         } catch (Exception e) {
         	
-    		LOGGER.error("Response from server:" + System.getProperty("line.separator") + body);
+    		getLog().error("Response from server:" + System.getProperty("line.separator") + body);
     		throw new Exception(String.format("Unexpected response to request for project file.  Check that user '%s' is able to access the project named '%s'", 
     				credentials.getUserName(), projectName));
 		}
 	}	
+
+	private boolean isSmartGWTBuild() {
+		// SmartGWT builds have their modules directory directly under $smartclientRuntimeDir,
+		// as opposed to SmartClient, which expects it at $smartclientRuntimeDir/system/modules
+		return FileUtils.getFile(smartclientRuntimeDir, "modules").exists();
+	}
+	
+	private String getIsomorphicDirPath(String relativeToPath) {
+		
+		String[] parentDirectories = relativeToPath.split("/");
+		int parentDirectoryCount = parentDirectories == null ? 0 : parentDirectories.length;
+		String prefix = "";
+		for (int i=1; i < parentDirectoryCount; i++) {
+			prefix = "../" + prefix;
+		}
+		
+		String name = null;
+		// e.g., myapplication/sc vs isomorphic
+		if (isSmartGWTBuild()) {
+			name = smartclientRuntimeDir.getParentFile().getName() + "/" + smartclientRuntimeDir.getName();
+		} else {
+			name = smartclientRuntimeDir.getName();
+		}
+		return prefix + name;
+	}
 	
 	/**
 	 * Requests the named project's export archive, including all screens and all datasources,
@@ -392,7 +598,8 @@ public class ImportMojo extends AbstractBaseMojo {
         
 		Map<String, Object> context = new HashMap<String, Object>();
     	context.put("projectName", projectName);
-    	context.put("datasourcesDir", datasourcesDir);
+    	context.put("datasourcesDir", dataSourcesDir);
+    	context.put("mockDatasourcesDir", mockDataSourcesDir);
     	context.put("uiDir", uiDir);
     	context.put("projectFileDir", projectFileDir);
     	context.put("projectFileName", projectFileName);
@@ -401,16 +608,18 @@ public class ImportMojo extends AbstractBaseMojo {
 		context.put("screens", getScreenNames(project));
 		context.put("datasources", getDataSourceNames(project));
 
-		StringWriter jspWriter  = new StringWriter();
-		freemarkerConfig.getTemplate("TestJspFileContent.ftl").process(context, jspWriter);
 		context.put("includeTestJsp",  includeTestJsp);
 		context.put("testJspPathname", testJspPathname);
+		StringWriter jspWriter  = new StringWriter();
+		freemarkerConfig.getTemplate("TestJspFileContent.ftl").process(context, jspWriter);
 		context.put("jspFileContent", StringEscapeUtils.escapeHtml4(jspWriter.toString()));
-		
-		StringWriter htmlWriter  = new StringWriter();
-		freemarkerConfig.getTemplate("TestHtmlFileContent.ftl").process(context, htmlWriter);
+
 		context.put("includeTestHtml",  includeTestHtml);
 		context.put("testHtmlPathname", testHtmlPathname);
+		StringWriter htmlWriter  = new StringWriter();
+		context.put("isomorphicDir", getIsomorphicDirPath(testHtmlPathname));
+		context.put("modulesDir", isSmartGWTBuild() ? "modules" : "system/modules");
+		freemarkerConfig.getTemplate("TestHtmlFileContent.ftl").process(context, htmlWriter);
 		context.put("htmlFileContent", StringEscapeUtils.escapeHtml4(htmlWriter.toString()));			
 		
     	StringWriter messageWriter = new StringWriter();
@@ -422,7 +631,7 @@ public class ImportMojo extends AbstractBaseMojo {
 		HttpPost request = new HttpPost("/isomorphic/IDACall?isc_rpc=1");
 	    request.setEntity(new UrlEncodedFormEntity(params));
 		
-        LOGGER.info("Downloading '{}' project export from '{}'...", projectName, host.getHostName());
+	    getLog().info(String.format("Downloading '%s' project export from '%s'...", projectName, host.getHostName()));
 	    
 		HttpResponse response = httpWorker.execute(request);
 		HttpEntity entity = response.getEntity();
@@ -506,7 +715,7 @@ public class ImportMojo extends AbstractBaseMojo {
         	String val = node.getStringValue();
         	File file = FileUtils.getFile(webappDir, val);
         	if (! file.exists()) {
-        		LOGGER.warn("Welcome file '{}' not found.  Skipping.", val);
+        		getLog().warn(String.format("Welcome file '{}' not found.  Skipping.", val));
         		continue;
         	}
         	welcomeFiles.add(file);
@@ -620,9 +829,9 @@ public class ImportMojo extends AbstractBaseMojo {
 		String name = getDataSourceName(metadata);
     	
 		// Check 'mock' subdirectory first, fallback to datasourcesDir if not found.
-		File file = FileUtils.getFile(parent, datasourcesDir, "mock", name + ".ds.xml");
+		File file = FileUtils.getFile(parent, mockDataSourcesDir, name + ".ds.xml");
     	if (! file.exists()) {
-        	file = FileUtils.getFile(parent, datasourcesDir, name + ".ds.xml");
+        	file = FileUtils.getFile(parent, dataSourcesDir, name + ".ds.xml");
     	}
 		return file;
 	}	
@@ -630,6 +839,10 @@ public class ImportMojo extends AbstractBaseMojo {
 	/*
 	 * Setters to allow execution from an Ant build (ImportTask)
 	 */
+	protected void setHost(String uri) {
+		this.host = URIUtils.extractHost(URI.create(uri));
+	}
+
 	protected void setWorkdir(File workdir) {
 		this.workdir = workdir;
 	}
@@ -638,40 +851,8 @@ public class ImportMojo extends AbstractBaseMojo {
 		this.webappDir = webappDir;
 	}
 
-	protected void setDatasourcesDir(String datasourcesDir) {
-		this.datasourcesDir = datasourcesDir;
-	}
-
-	protected void setUiDir(String uiDir) {
-		this.uiDir = uiDir;
-	}
-
-	protected void setProjectFileDir(String projectFileDir) {
-		this.projectFileDir = projectFileDir;
-	}
-
-	protected void setProjectName(String projectName) {
-		this.projectName = projectName;
-	}
-
-	protected void setProjectFileName(String projectFileName) {
-		this.projectFileName = projectFileName;
-	}
-
-	protected void setZipFileName(String zipFileName) {
-		this.zipFileName = zipFileName;
-	}
-
-	protected void setCredentials(UsernamePasswordCredentials credentials) {
-		this.credentials = credentials;
-	}
-
-	protected void setProxy(Proxy proxy) {
-		this.proxy = proxy;
-	}
-
-	protected void setServerId(String serverId) {
-		this.serverId = serverId;
+	protected void setSmartclientRuntimeDir(File smartclientRuntimeDir) {
+		this.smartclientRuntimeDir = smartclientRuntimeDir;
 	}
 
 	protected void setIncludeTestJsp(boolean includeTestJsp) {
@@ -690,6 +871,30 @@ public class ImportMojo extends AbstractBaseMojo {
 		this.testHtmlPathname = testHtmlPathname;
 	}
 
+	protected void setDataSourcesDir(String dataSourcesDir) {
+		this.dataSourcesDir = dataSourcesDir;
+	}
+
+	protected void setMockDataSourcesDir(String mockDataSourcesDir) {
+		this.mockDataSourcesDir = mockDataSourcesDir;
+	}
+
+	protected void setSkipValidationOnImport(boolean skipValidationOnImport) {
+		this.skipValidationOnImport = skipValidationOnImport;
+	}
+
+	protected void setValidationFailureThreshold(Severity validationFailureThreshold) {
+		this.validationFailureThreshold = validationFailureThreshold;
+	}
+
+	protected void setUiDir(String uiDir) {
+		this.uiDir = uiDir;
+	}
+
+	protected void setProjectFileDir(String projectFileDir) {
+		this.projectFileDir = projectFileDir;
+	}
+
 	protected void setModifyWelcomeFiles(boolean modifyWelcomeFiles) {
 		this.modifyWelcomeFiles = modifyWelcomeFiles;
 	}
@@ -698,9 +903,30 @@ public class ImportMojo extends AbstractBaseMojo {
 		this.drawOnWelcomeFiles = drawOnWelcomeFiles;
 	}
 
+	protected void setProjectName(String projectName) {
+		this.projectName = projectName;
+	}
+
+	protected void setProjectFileName(String projectFileName) {
+		this.projectFileName = projectFileName;
+	}
+
+	protected void setZipFileName(String zipFileName) {
+		this.zipFileName = zipFileName;
+	}
+
 	protected void setSkipOverwriteProtection(boolean skipOverwriteProtection) {
 		this.skipOverwriteProtection = skipOverwriteProtection;
 	}
+
+	protected void setCredentials(UsernamePasswordCredentials credentials) {
+		this.credentials = credentials;
+	}
+
+	protected void setProxy(Proxy proxy) {
+		this.proxy = proxy;
+	}
+
 	
 	
 	

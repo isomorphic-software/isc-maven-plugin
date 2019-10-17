@@ -9,6 +9,7 @@
                     <projectType>smartgwt</projectType>
                     <exportStyle>zip</exportStyle>
                     <datasourcesDir>${datasourcesDir}</datasourcesDir>
+                    <mockDatasourcesDir>${mockDatasourcesDir}</mockDatasourcesDir>
                     <includeTestData xsi:type="xsd:boolean">false</includeTestData>
                     <uiDir>${uiDir}</uiDir>
                     <includeJSP xsi:type="xsd:boolean">${includeTestJsp?c}</includeJSP>

@@ -10,11 +10,9 @@
   <head>
     <meta http-equiv="content-type" content="text/html; charset=UTF-8">
     
-    <link type="text/css" rel="stylesheet" href="style.css">
-
     <title>${projectName}</title>
 
-    <sc:loadISC skin="Tahoe" />
+    <sc:loadISC skin="Tahoe" modulesDir="modules" />
 
   </head>
 

@@ -5,59 +5,124 @@ import java.io.File;
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.maven.settings.Proxy;
 import org.apache.tools.ant.BuildException;
+import org.apache.tools.ant.PropertyHelper;
 import org.apache.tools.ant.Task;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import com.isomorphic.maven.util.AntProjectLogger;
+import com.isomorphic.util.ErrorMessage.Severity;
 
 /**
- * An Ant task allowing the Reify Import Mojo to be run from Ant builds.
+ * An Ant task allowing the Reify {@link ImportMojo} to be run from Ant builds.  Note that
+ * default values have been changed to accomodate a typical Ant project structure, otherwise
+ * functionality is unchanged.
+ * <p>
+ * To use this Task, just add a taskdef to the desired build target, and make sure you have the
+ * required classpath entries set up correctly.  If you've built your project using one of the 
+ * Maven archetypes for either  
+ * <a href="https://www.smartclient.com/smartgwt-latest/javadoc/com/smartgwt/client/docs/MavenSupport.html">SmartGWT</a>
+ * or
+ * <a href="https://www.smartclient.com/smartclient-latest/isomorphic/system/reference/?id=group..mavenSupport">SmartClient</a>
+ * (and subsequently issued the ant 'unmaven' target), this should all be done for you.  
+ * Otherwise, you'll want to add something like the following to your build:
+ * <pre>
+ * &lt;property name="reify.lib" value="${basedir}/build/ivy/reify/lib" /&gt;
+ * 
+ * &lt;path id="reify.classpath"&gt;
+ *     &lt;fileset dir="${reify.lib}" erroronmissingdir="false"&gt;
+ *       &lt;include name="**&#47;*.jar" /&gt;
+ *     &lt;/fileset&gt;
+ * &lt;/path&gt;
+ * 
+ * &lt;target name="reify-tasklibs"&gt;
+ *     &lt;mkdir dir="${reify.lib}" /&gt;
+ *     &lt;ivy:resolve conf="reify" /&gt;
+ *     &lt;ivy:retrieve conf="reify" pattern="${reify.lib}/[artifact]-[revision](-[classifier]).[ext]"/&gt;
+ * &lt;/target&gt;
+ * 
+ * &lt;target name="reify-import" depends="reify-tasklibs"&gt;
+ * 
+ *     &lt;taskdef name="reify-import" classname="com.isomorphic.maven.mojo.reify.ImportTask" classpathref="reify.classpath"/&gt;
+ *     &lt;reify-import projectName="MyProject" username="${username}" password="${password}" 
+ *                   datasourcesDir="WEB-INF/ds/classic-models" 
+ *                   smartclientRuntimeDir="${basedir}/war/isomorphic" /&gt;
+ * &lt;/target&gt;
+ * </pre>
+ * Use of ivy is of course optional,  you just need somehow to get the isomorphic_m2pluginextras module and its 
+ * <a href="https://www.smartclient.com/smartclient-latest/isomorphic/system/reference/?id=group..javaModuleDependencies">dependencies</a>
+ * on your classpath - here they are copied to the directory defined in the <code>reify.lib</code> property)
+ * <p>
+ * Note that users working behind a proxy may need to provide server information to Ant 
+ * by way of the ANT_OPTS environment variable:
+ * <pre>
+ * export ANT_OPTS="-Dhttp.proxyHost=myproxyhost -Dhttp.proxyPort=8080 -Dhttp.proxyUser=myproxyusername -Dhttp.proxyPassword=myproxypassword"
+ * </pre>
  */
 public class ImportTask extends Task {
 
+	protected String workdir;
+	protected String webappDir = "war";
+	protected String smartclientRuntimeDir;    
+	protected boolean includeTestJsp;
+	protected String testJspPathname;
+	protected boolean includeTestHtml;
+	protected String testHtmlPathname;
+	protected String dataSourcesDir = "WEB-INF/ds";
+	protected String mockDataSourcesDir = "WEB-INF/ds/mock";
+	protected boolean skipValidationOnImport;    
+	protected Severity validationFailureThreshold = Severity.ERROR; 
+	protected String uiDir = "WEB-INF/ui";
+	protected String projectFileDir = "WEB-INF/ui";
+	protected boolean modifyWelcomeFiles;
+	protected boolean drawOnWelcomeFiles;
+	protected String projectName;
+	protected String projectFileName;
+	protected String zipFileName;
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(ImportTask.class);
+	protected String username;
+	protected String password;
 	
-	private String datasourcesDir = "WEB-INF/ds";
-	private boolean includeProjectFile = true;
-	private String password;
-	private String projectFileDir = "WEB-INF/ui";
-	private String projectFileName;
-	private String projectName;
-	private String uiDir = "WEB-INF/ui";
-	private String username;
-	private String webappDir = "war";
 	
-	private String workdir = "build";
-	private String zipFileName;
-
 	@Override
 	public void execute() throws BuildException {
 
-		// Sadly, there doesn't seem to be any good way to get the Mojo's slf4j logger output into the Ant console.  
-		log("Importing reify assets from server...");
-		
 		ImportMojo mojo = new ImportMojo();
+		mojo.setLog(new AntProjectLogger(getProject()));
 		
 		if (username == null || password == null) {
 			throw new BuildException("Username and password parameters required.");
 		}
 
+		if (projectName == null) {
+			projectName = getProject().getName();
+		}
+		
 		mojo.setCredentials(new UsernamePasswordCredentials(username, password));
-		
-		String name = projectName != null ? projectName : getProject().getName();
-		
-		mojo.setProjectName(name);
-		mojo.setProjectFileName(projectFileName != null ? projectFileName : name + ".proj.xml");
-		mojo.setProjectFileDir(projectFileDir);
-		mojo.setUiDir(uiDir);
-		mojo.setWebappDir(new File(getProject().getBaseDir(), webappDir));
-		mojo.setZipFileName(zipFileName != null ? zipFileName : name + "proj.zip");
-		mojo.setWorkdir(new File(getProject().getBaseDir(), workdir));
 
-		mojo.setDatasourcesDir(datasourcesDir);
-//		mojo.setIncludeProjectFile(includeProjectFile);
+		mojo.setWorkdir(workdir != null ? new File(workdir) : new File(getProject().getBaseDir(), "build/reify"));
+		mojo.setWebappDir(webappDir != null ? new File(webappDir) : new File(getProject().getBaseDir(), webappDir));
+		mojo.setSmartclientRuntimeDir(smartclientRuntimeDir != null ? new File(smartclientRuntimeDir) : new File(getProject().getBaseDir(), "war/isomorphic"));
+		mojo.setIncludeTestJsp(includeTestJsp);
+		mojo.setTestJspPathname(testJspPathname = testJspPathname != null ? testJspPathname : projectName + ".run.jsp");
+		mojo.setIncludeTestHtml(includeTestHtml);
+		mojo.setTestHtmlPathname(testHtmlPathname = testHtmlPathname != null ? testHtmlPathname : projectName + ".run.html");
+		mojo.setDataSourcesDir(dataSourcesDir);
+		mojo.setMockDataSourcesDir(mockDataSourcesDir);
+		mojo.setSkipValidationOnImport(skipValidationOnImport);
+		mojo.setValidationFailureThreshold(validationFailureThreshold);
+		mojo.setUiDir(uiDir);
+		mojo.setProjectFileDir(projectFileDir);
+		mojo.setModifyWelcomeFiles(modifyWelcomeFiles);
+		mojo.setDrawOnWelcomeFiles(drawOnWelcomeFiles);
+		mojo.setProjectName(projectName);
+		mojo.setProjectFileName(projectFileName != null ? projectFileName : projectName + "proj.xml");
+		mojo.setZipFileName(zipFileName != null ? zipFileName : projectName + "proj.zip");
+
+		// undocumented parameter to allow for testing against QA environment
+		Object host = PropertyHelper.getProperty(getProject(), "host");
+		if (host != null) {
+			mojo.setHost(String.valueOf(host));
+		}		
 		
-		//export ANT_OPTS="-Dhttp.proxyHost=myproxyhost -Dhttp.proxyPort=8080 -Dhttp.proxyUser=myproxyusername -Dhttp.proxyPassword=myproxypassword"
 		String proxyHost = System.getProperty("http.proxyHost");
 		String proxyPort = System.getProperty("http.proxyPort");
 		String proxyUser = System.getProperty("http.proxyUser");
@@ -85,52 +150,164 @@ public class ImportTask extends Task {
 		}
 		
 	}
-	
-	/*
-	 * Configuration property setters
+
+	/**
+	 * Change the default value of <strong>${basedir}/build/reify</strong>.
+	 * 
+	 * @see  ImportMojo#workdir
 	 */
-	public void setDatasourcesDir(String datasourcesDir) {
-		this.datasourcesDir = datasourcesDir;
-	}
-
-	public void setIncludeProjectFile(boolean includeProjectFile) {
-		this.includeProjectFile = includeProjectFile;
-	}
-
-	public void setPassword(String password) {
-		this.password = password;
-	}
-
-	public void setProjectFileDir(String projectFileDir) {
-		this.projectFileDir = projectFileDir;
-	}
-
-	public void setProjectFileName(String projectFileName) {
-		this.projectFileName = projectFileName;
-	}
-
-	public void setProjectName(String projectName) {
-		this.projectName = projectName;
-	}
-
-	public void setUiDir(String uiDir) {
-		this.uiDir = uiDir;
-	}
-
-	public void setUsername(String username) {
-		this.username = username;
-	}
-
-	public void setWebappDir(String webappDir) {
-		this.webappDir = webappDir;
-	}
-
 	public void setWorkdir(String workdir) {
 		this.workdir = workdir;
 	}
 
-	public void setZipFileName(String zipFileName) {
-		this.zipFileName = zipFileName;
-	}	
-	
+
+	/**
+	 * Change the default value of <strong>${basedir}/war</strong>.
+	 * 
+	 * @see ImportMojo#webappDir
+	 */
+	public void setWebappDir(String webappDir) {
+		this.webappDir = webappDir;
+	}
+
+	/**
+	 * Change the default value of <Strong>${basedir}/war/isomorphic</strong>.
+	 * 
+	 * @see ImportMojo#smartclientRuntimeDir
+	 */
+	public void setSmartclientRuntimeDir(String smartclientRuntimeDir) {
+		this.smartclientRuntimeDir = smartclientRuntimeDir;
+	}
+
+	/**
+	 * Change the default value of <strong>false</strong>.
+	 * 
+	 * @see ImportMojo#includeTestJsp
+	 */
+	public void setIncludeTestJsp(boolean includeTestJsp) {
+		this.includeTestJsp = includeTestJsp;
+	}
+
+	/**
+	 * Change the default value of <Strong>{@link #projectName}.run.jsp</strong>.
+	 * 
+	 * @see ImportMojo#testJspPathname
+	 */
+	public void setTestJspPathname(String testJspPathname) {
+		this.testJspPathname = testJspPathname;
+	}
+
+	/**
+	 * Change the default value of <strong>false</strong>.
+	 * 
+	 * @see ImportMojo#includeTestHtml
+	 */
+	public void setIncludeTestHtml(boolean includeTestHtml) {
+		this.includeTestHtml = includeTestHtml;
+	}
+
+	/**
+	 * Change the default value of <strong>{@link #projectName}.run.html</strong>.
+	 * 
+	 * @see ImportMojo#testHtmlPathname
+	 */
+	public void setTestHtmlPathname(String testHtmlPathname) {
+		this.testHtmlPathname = testHtmlPathname;
+	}
+
+	/**
+	 * Change the default value of WEB-INF/ds.
+	 * 
+	 * @see ImportMojo#dataSourcesDir
+	 */
+	public void setDataSourcesDir(String dataSourcesDir) {
+		this.dataSourcesDir = dataSourcesDir;
+	}
+
+	/**
+	 * Change the default value of <strong>{@link #dataSourcesDir}/mock</strong>.
+	 * 
+	 * @see ImportMojo#mockDataSourcesDir
+	 */
+	public void setMockDataSourcesDir(String mockDataSourcesDir) {
+		this.mockDataSourcesDir = mockDataSourcesDir;
+	}
+
+	/**
+	 * Change the default value of <strong>false</strong>.
+	 * 
+	 * @see ImportMojo#skipValidationOnImport
+	 */
+	public void setSkipValidationOnImport(boolean skipValidationOnImport) {
+		this.skipValidationOnImport = skipValidationOnImport;
+	}
+
+	/**
+	 * Change the default value of <strong>ERROR</strong>.  
+	 * Other legal values include INFO and WARN.
+	 * 
+	 * @see ImportMojo#validationFailureThreshold
+	 */
+	public void setValidationFailureThreshold(Severity validationFailureThreshold) {
+		this.validationFailureThreshold = validationFailureThreshold;
+	}
+
+	/**
+	 * Change the default value of <strong>WEB-INF/ui</strong>.
+	 * 
+	 * @see ImportMojo#uiDir
+	 */
+	public void setUiDir(String uiDir) {
+		this.uiDir = uiDir;
+	}
+
+	/**
+	 * Change the default value of <strong>WEB-INF/ui</strong>.
+	 * 
+	 * @see ImportMojo#projectFileDir
+	 */
+	public void setProjectFileDir(String projectFileDir) {
+		this.projectFileDir = projectFileDir;
+	}
+
+	/**
+	 * Change the default value of <strong>false</strong>.
+	 * 
+	 * @see ImportMojo#modifyWelcomeFiles
+	 */
+	public void setModifyWelcomeFiles(boolean modifyWelcomeFiles) {
+		this.modifyWelcomeFiles = modifyWelcomeFiles;
+	}
+
+	/**
+	 * Change the default value of <strong>false</strong>.
+	 * 
+	 * @see ImportMojo#drawOnWelcomeFiles
+	 */
+	public void setDrawOnWelcomeFiles(boolean drawOnWelcomeFiles) {
+		this.drawOnWelcomeFiles = drawOnWelcomeFiles;
+	}
+
+	/**
+	 * Change the default value of <strong>${ant.project.name}</strong>.
+	 * 
+	 * @see ImportMojo#projectName
+	 */
+	public void setProjectName(String projectName) {
+		this.projectName = projectName;
+	}
+
+	/**
+	 * Set the username needed to authenticate to <a href="https://create.reify.com/"></a>
+	 */
+	public void setUsername(String username) {
+		this.username = username;
+	}
+
+	/**
+	 * Set the password needed to authenticate to <a href="https://create.reify.com/"></a>
+	 */
+	public void setPassword(String password) {
+		this.password = password;
+	}
 }
