@@ -138,7 +138,7 @@ public class ImportMojo extends AbstractBaseMojo {
      */
     @Parameter(property = "serverId", defaultValue = "smartclient-developer")
     protected String serverId;
-	
+
     /**
      * The directory to which the archive is downloaded and unpacked.  Note that this is
      * not the final destination of exported assets.  For that, see {@link ImportMojo#webappDir}.
@@ -320,22 +320,22 @@ public class ImportMojo extends AbstractBaseMojo {
     private boolean skipOverwriteProtection;
     
     private UsernamePasswordCredentials credentials;
-	private Configuration freemarkerConfig;
+    private Configuration freemarkerConfig;
     private Proxy proxy;
     
-	private HttpHost host;
-	private HttpRequestManager httpWorker;
-	
-	public ImportMojo() {
+    private HttpHost host;
+    private HttpRequestManager httpWorker;
 
-		// undocumented parameters to allow for testing against QA environment
-		String uri = System.getProperty("host");
-		if (uri == null) {
-			uri = "https://create.reify.com";
-		}
-		setHost(uri);
+    public ImportMojo() {
 
-		// we'll use a freemarker template to construct the request for project metadata
+        // undocumented parameters to allow for testing against QA environment
+        String uri = System.getProperty("host");
+        if (uri == null) {
+            uri = "https://create.reify.com";
+        }
+        setHost(uri);
+
+        // we'll use a freemarker template to construct the request for project metadata
         ClassTemplateLoader ctl = new ClassTemplateLoader(getClass(), "");
         freemarkerConfig = new Configuration(Configuration.VERSION_2_3_28);
         freemarkerConfig.setTemplateLoader(ctl);
@@ -343,308 +343,308 @@ public class ImportMojo extends AbstractBaseMojo {
         freemarkerConfig.setLogTemplateExceptions(false);
         freemarkerConfig.setWrapUncheckedExceptions(true);
         freemarkerConfig.setTemplateExceptionHandler(TemplateExceptionHandler.RETHROW_HANDLER);
-	}
-	
-	/**
-	 * After ensuring there are no local modifications (unless otherwise configured), downloads
-	 * and installs Reify project contents to the local project environment.
-	 */
-	@Override
-	public void execute() throws MojoExecutionException, MojoFailureException {
+    }
+
+    /**
+     * After ensuring there are no local modifications (unless otherwise configured), downloads
+     * and installs Reify project contents to the local project environment.
+     */
+    @Override
+    public void execute() throws MojoExecutionException, MojoFailureException {
 
         try {
 
-    		// derive filenames from project name
-    		zipFileName = projectName + ".proj.zip";
-    		projectFileName = projectName + ".proj.xml";
-        	
-			// check to make sure there are no local changes, unless configured otherwise
-			if (! skipOverwriteProtection) {
-				checkForLocalModifications();	
-			}
-			
-			// allow explicit configuration from ImportTask (for Ant builds)
-			if (credentials == null) {
-		        credentials = getCredentials(serverId);			
-			}
-	        if (credentials == null) {
-	        	throw new MojoExecutionException("Reify credentials have not been configured.  Check Maven settings for the '" + serverId + "' server.");
-	        }
-	
-	        // allow for manual construction of the Proxy (again, for Ant builds)
-	        httpWorker = new HttpRequestManager(host, credentials, settings != null ? settings.getActiveProxy() : proxy);
-	        httpWorker.login();
-	        
-	        // get fresh project metadata and archive from the server
-	    	Document project = downloadProjectDocument();
-	    	File archive = downloadProjectArchive(project);
+            // derive filenames from project name
+            zipFileName = projectName + ".proj.zip";
+            projectFileName = projectName + ".proj.xml";
 
-	    	getLog().info(String.format("Importing Reify project assets from download at '%s'...", archive.getCanonicalPath()));
-			File unpacked = new File(workdir, projectName);
-			ArchiveUtils.unzip(archive, unpacked);
+            // check to make sure there are no local changes, unless configured otherwise
+            if (! skipOverwriteProtection) {
+                checkForLocalModifications();
+            }
 
-			// update the new project file with checksums of file content for overwrite protection on future imports
-			writeProjectFile(project, unpacked);
+            // allow explicit configuration from ImportTask (for Ant builds)
+            if (credentials == null) {
+                credentials = getCredentials(serverId);
+            }
+            if (credentials == null) {
+                throw new MojoExecutionException("Reify credentials have not been configured.  Check Maven settings for the '" + serverId + "' server.");
+            }
 
-			// and copy the result to application source
-			FileUtils.copyDirectory(unpacked, webappDir);
-			
-			// finally, if the user has for some reason decided they want us to mangle their source, do so
-			if (modifyWelcomeFiles || drawOnWelcomeFiles) {
-				modifyWelcomeFiles();
-			}
-			
-			// and validate whatever live datasources exist against the newly imported mocks
-			if (! skipValidationOnImport) {
-				getLog().info("Validating MockDataSources against any working DataSources...");
-				validate();
-			}
-			
+            // allow for manual construction of the Proxy (again, for Ant builds)
+            httpWorker = new HttpRequestManager(host, credentials, settings != null ? settings.getActiveProxy() : proxy);
+            httpWorker.login();
+
+            // get fresh project metadata and archive from the server
+            Document project = downloadProjectDocument();
+            File archive = downloadProjectArchive(project);
+
+            getLog().info(String.format("Importing Reify project assets from download at '%s'...", archive.getCanonicalPath()));
+            File unpacked = new File(workdir, projectName);
+            ArchiveUtils.unzip(archive, unpacked);
+
+            // update the new project file with checksums of file content for overwrite protection on future imports
+            writeProjectFile(project, unpacked);
+
+            // and copy the result to application source
+            FileUtils.copyDirectory(unpacked, webappDir);
+
+            // finally, if the user has for some reason decided they want us to mangle their source, do so
+            if (modifyWelcomeFiles || drawOnWelcomeFiles) {
+                modifyWelcomeFiles();
+            }
+
+            // and validate whatever live datasources exist against the newly imported mocks
+            if (! skipValidationOnImport) {
+                getLog().info("Validating MockDataSources against any working DataSources...");
+                validate();
+            }
+
         } catch (MojoExecutionException e) {
-        	throw e;
-		} catch (Exception e) {
-			throw new MojoExecutionException("Import Error", e);
-		}  finally {
-			try {
-				httpWorker.logout();
-			} catch (Exception ignore) {}
-		}
-	}
-	
-	/**
-	 * Compares mock DataSources to live, logging findings and throwing an Exception if and 
-	 * when the {@link #validationFailureThreshold} is exceeded.
-	 */
-	protected void validate() {
-		
-		try {
-			
-			ReifyDataSourceValidator validator = new ReifyDataSourceValidator(smartclientRuntimeDir.getCanonicalPath(), webappDir + "/" + dataSourcesDir);
-			validator.setMockDataSourcesBasePath(webappDir + "/" + mockDataSourcesDir);
+            throw e;
+        } catch (Exception e) {
+            throw new MojoExecutionException("Import Error", e);
+        }  finally {
+            try {
+                httpWorker.logout();
+            } catch (Exception ignore) {}
+        }
+    }
 
-			List<ErrorReport> result = validator.verify();
-			boolean fail = false;
-			if (! result.isEmpty()) {
-				for (ErrorReport report : result) {
-					for (String key : report.keySet()) {
-						List<ErrorMessage> errors = report.getErrors(key);
-						
-						for (ErrorMessage msg : errors) {
-							
-							String output = null;
-							if (key.equals(report.getDataSourceId())) {
-								output = String.format("%s: %s", report.getDataSourceId(), msg.getErrorString());
-							} else {
-								output = String.format("%s.%s: %s", report.getDataSourceId(), key, msg.getErrorString());
-							}
-							
-							Severity severity = msg.getSeverity();
-							if (severity.compareTo(validationFailureThreshold) >= 0) {
-								fail = true;
-							}
-							
-							if (severity == INFO) {
-								getLog().info(output);
-							}
-							if (msg.getSeverity() == WARN) {
-								getLog().warn(output);
-							}
-							if (msg.getSeverity() == ERROR) {
-								getLog().error(output);
-							}							
-						}
-					}				
-				}
-			} else {
-				getLog().info("No validation errors were found.");
-			}
-			if (fail) {
-				throw new MojoExecutionException("Mock DataSource validation failure.  Please refer to ReifyDataSourceValidator log output for detailed report.");
-			}
-		} catch (Exception e) {
-			throw new RuntimeException(e);
-		}
-	}
-	
-	/**
-	 * Checks for local modifications, as documented at {@link #skipOverwriteProtection}},
-	 * and fails when any local changes are detected.
-	 * <p>
-	 * Note that files are expected in the configured locations - screens in {@link #uiDir}
-	 * and datasources in {@link #mockDataSourcesDir} / {@link #dataSourcesDir} 
-	 * subdirectories).
-	 * 
- 	 * @throws MojoExecutionException when any local changes are detected
- 	 * @throws Exception on any other error
-	 */
-	private void checkForLocalModifications() throws MojoExecutionException, Exception {
-		
-		File projectFile = new File(webappDir, projectFileDir + "/" + projectFileName);
-		if (! projectFile.exists()) {
-			//LOGGER.info("Project file does not exist at '{}', but will be created during import.", projectFile.getCanonicalPath());
-			getLog().info(String.format("Project file does not exist at '%s', but will be created during import.", projectFile.getCanonicalPath()));
-			return;
-		}
+    /**
+     * Compares mock DataSources to live, logging findings and throwing an Exception if and
+     * when the {@link #validationFailureThreshold} is exceeded.
+     */
+    protected void validate() {
 
-		SAXReader reader = new SAXReader();
+        try {
+
+            ReifyDataSourceValidator validator = new ReifyDataSourceValidator(smartclientRuntimeDir.getCanonicalPath(), webappDir + "/" + dataSourcesDir);
+            validator.setMockDataSourcesBasePath(webappDir + "/" + mockDataSourcesDir);
+
+            List<ErrorReport> result = validator.verify();
+            boolean fail = false;
+            if (! result.isEmpty()) {
+                for (ErrorReport report : result) {
+                    for (String key : report.keySet()) {
+                        List<ErrorMessage> errors = report.getErrors(key);
+
+                        for (ErrorMessage msg : errors) {
+
+                            String output = null;
+                            if (key.equals(report.getDataSourceId())) {
+                                output = String.format("%s: %s", report.getDataSourceId(), msg.getErrorString());
+                            } else {
+                                output = String.format("%s.%s: %s", report.getDataSourceId(), key, msg.getErrorString());
+                            }
+
+                            Severity severity = msg.getSeverity();
+                            if (severity.compareTo(validationFailureThreshold) >= 0) {
+                                fail = true;
+                            }
+
+                            if (severity == INFO) {
+                                getLog().info(output);
+                            }
+                            if (msg.getSeverity() == WARN) {
+                                getLog().warn(output);
+                            }
+                            if (msg.getSeverity() == ERROR) {
+                                getLog().error(output);
+                            }
+                        }
+                    }
+                }
+            } else {
+                getLog().info("No validation errors were found.");
+            }
+            if (fail) {
+                throw new MojoExecutionException("Mock DataSource validation failure.  Please refer to ReifyDataSourceValidator log output for detailed report.");
+            }
+        } catch (Exception e) {
+            throw new RuntimeException(e);
+        }
+    }
+
+    /**
+     * Checks for local modifications, as documented at {@link #skipOverwriteProtection}},
+     * and fails when any local changes are detected.
+     * <p>
+     * Note that files are expected in the configured locations - screens in {@link #uiDir}
+     * and datasources in {@link #mockDataSourcesDir} / {@link #dataSourcesDir}
+     * subdirectories).
+     *
+     * @throws MojoExecutionException when any local changes are detected
+     * @throws Exception on any other error
+     */
+    private void checkForLocalModifications() throws MojoExecutionException, Exception {
+
+        File projectFile = new File(webappDir, projectFileDir + "/" + projectFileName);
+        if (! projectFile.exists()) {
+            //LOGGER.info("Project file does not exist at '{}', but will be created during import.", projectFile.getCanonicalPath());
+            getLog().info(String.format("Project file does not exist at '%s', but will be created during import.", projectFile.getCanonicalPath()));
+            return;
+        }
+
+        SAXReader reader = new SAXReader();
         Document document = reader.read(projectFile);
 
-		String msg = "File '%s' appears to have been modified since the last import.  Aborting to provide an opprtunity to investigate.  \n" + 
-				"You can either revert your changes, delete the file, or remove its checksum from the project file to continue. \n" + 
-				"You can also disable the check for this and all other files using the skipOverwriteProtection parameter.";
+        String msg = "File '%s' appears to have been modified since the last import.  Aborting to provide an opprtunity to investigate.  \n" +
+                "You can either revert your changes, delete the file, or remove its checksum from the project file to continue. \n" +
+                "You can also disable the check for this and all other files using the skipOverwriteProtection parameter.";
         
         List<Node> screens = getScreenNodes(document);
         for (Node screen : screens) {
-        	String expected = screen.valueOf("checksum");
-        	if (expected.isEmpty()) {
-        		continue;
-        	}
-        	File file = getScreen(screen, webappDir);
-        	if (! file.exists()) {
-        		continue;
-        	}
-        	
-        	String actual = Files.asByteSource(file).hash(Hashing.sha256()).toString(); 
-        	if (!actual.equals(expected)) {
-        		getLog().debug(String.format("Checksum mismatch - Expected: '%s' Actual: '%s'", expected, actual));
-        		throw new MojoExecutionException(String.format(msg, file.getCanonicalPath()));
-        	}	        	
-		}
+            String expected = screen.valueOf("checksum");
+            if (expected.isEmpty()) {
+                continue;
+            }
+            File file = getScreen(screen, webappDir);
+            if (! file.exists()) {
+                continue;
+            }
+
+            String actual = Files.asByteSource(file).hash(Hashing.sha256()).toString();
+            if (!actual.equals(expected)) {
+                getLog().debug(String.format("Checksum mismatch - Expected: '%s' Actual: '%s'", expected, actual));
+                throw new MojoExecutionException(String.format(msg, file.getCanonicalPath()));
+            }
+        }
         List<Node> datasources = getDataSourceNodes(document);
         for (Node ds : datasources) {
-        	String expected = ds.valueOf("checksum");
-        	if (expected.isEmpty()) {
-        		continue;
-        	}
-        	File file = getDataSource(ds, webappDir);
-        	if (! file.exists()) {
-        		continue;
-        	}
-        	
-        	String actual = Files.asByteSource(file).hash(Hashing.sha256()).toString(); 
-        	if (!actual.equals(expected)) {
-        		getLog().debug(String.format("Checksum mismatch - Expected: '%s' Actual: '%s'", expected, actual));
-        		throw new MojoExecutionException(String.format(msg, file.getCanonicalPath()));
-        	}	        	
-		}
-	}
+            String expected = ds.valueOf("checksum");
+            if (expected.isEmpty()) {
+                continue;
+            }
+            File file = getDataSource(ds, webappDir);
+            if (! file.exists()) {
+                continue;
+            }
 
-	/**
-	 * Requests the named project's metadata from the reify server.
-	 * 
-	 * @return Document containing the result.
-	 * @throws Exception when any error occurs
-	 */
-	private Document downloadProjectDocument() throws Exception {
-		
-		getLog().info("Contacting server for Reify project metadata...");
+            String actual = Files.asByteSource(file).hash(Hashing.sha256()).toString();
+            if (!actual.equals(expected)) {
+                getLog().debug(String.format("Checksum mismatch - Expected: '%s' Actual: '%s'", expected, actual));
+                throw new MojoExecutionException(String.format(msg, file.getCanonicalPath()));
+            }
+        }
+    }
+
+    /**
+     * Requests the named project's metadata from the reify server.
+     *
+     * @return Document containing the result.
+     * @throws Exception when any error occurs
+     */
+    private Document downloadProjectDocument() throws Exception {
+
+        getLog().info("Contacting server for Reify project metadata...");
         
         HttpGet request = new HttpGet("/isomorphic/RESTHandler/hostedProjects?fileName=" + URLEncoder.encode(projectName) + "&isc_dataFormat=xml");
         HttpResponse response = httpWorker.execute(request);
 
         String body = null;
         try {
-	        
-        	body = EntityUtils.toString(response.getEntity());
-	   		Document metadata =  DocumentHelper.parseText(body);
-	   		
-			Node fileContents = metadata.selectSingleNode("//fileContents");    	
-	    	String project = fileContents.getText();
-			
-	    	return DocumentHelper.parseText(project);
-	    	
+
+            body = EntityUtils.toString(response.getEntity());
+            Document metadata =  DocumentHelper.parseText(body);
+
+            Node fileContents = metadata.selectSingleNode("//fileContents");
+            String project = fileContents.getText();
+
+            return DocumentHelper.parseText(project);
+
         } catch (Exception e) {
-        	
-    		getLog().error("Response from server:" + System.getProperty("line.separator") + body);
-    		throw new Exception(String.format("Unexpected response to request for project file.  Check that user '%s' is able to access the project named '%s'", 
-    				credentials.getUserName(), projectName));
-		}
-	}	
 
-	private boolean isSmartGWTBuild() {
-		// SmartGWT builds have their modules directory directly under $smartclientRuntimeDir,
-		// as opposed to SmartClient, which expects it at $smartclientRuntimeDir/system/modules
-		return FileUtils.getFile(smartclientRuntimeDir, "modules").exists();
-	}
-	
-	private String getIsomorphicDirPath(String relativeToPath) {
-		
-		String[] parentDirectories = relativeToPath.split("/");
-		int parentDirectoryCount = parentDirectories == null ? 0 : parentDirectories.length;
-		String prefix = "";
-		for (int i=1; i < parentDirectoryCount; i++) {
-			prefix = "../" + prefix;
-		}
-		
-		String name = null;
-		// e.g., myapplication/sc vs isomorphic
-		if (isSmartGWTBuild()) {
-			name = smartclientRuntimeDir.getParentFile().getName() + "/" + smartclientRuntimeDir.getName();
-		} else {
-			name = smartclientRuntimeDir.getName();
-		}
-		return prefix + name;
-	}
-	
-	/**
-	 * Requests the named project's export archive, including all screens and all datasources,
-	 * downloads it, and saves it to {@link #workdir}.
-	 * 
-	 * @param project metadata used to provide the names of requested assets
-	 * @return zip file containing the export result
-	 * @throws Exception when any error occurs
-	 */
-	private File downloadProjectArchive(Document project) throws Exception {
+            getLog().error("Response from server:" + System.getProperty("line.separator") + body);
+            throw new Exception(String.format("Unexpected response to request for project file.  Check that user '%s' is able to access the project named '%s'",
+                    credentials.getUserName(), projectName));
+        }
+    }
+
+    private boolean isSmartGWTBuild() {
+        // SmartGWT builds have their modules directory directly under $smartclientRuntimeDir,
+        // as opposed to SmartClient, which expects it at $smartclientRuntimeDir/system/modules
+        return FileUtils.getFile(smartclientRuntimeDir, "modules").exists();
+    }
+
+    private String getIsomorphicDirPath(String relativeToPath) {
+
+        String[] parentDirectories = relativeToPath.split("/");
+        int parentDirectoryCount = parentDirectories == null ? 0 : parentDirectories.length;
+        String prefix = "";
+        for (int i=1; i < parentDirectoryCount; i++) {
+            prefix = "../" + prefix;
+        }
+
+        String name = null;
+        // e.g., myapplication/sc vs isomorphic
+        if (isSmartGWTBuild()) {
+            name = smartclientRuntimeDir.getParentFile().getName() + "/" + smartclientRuntimeDir.getName();
+        } else {
+            name = smartclientRuntimeDir.getName();
+        }
+        return prefix + name;
+    }
+
+    /**
+     * Requests the named project's export archive, including all screens and all datasources,
+     * downloads it, and saves it to {@link #workdir}.
+     *
+     * @param project metadata used to provide the names of requested assets
+     * @return zip file containing the export result
+     * @throws Exception when any error occurs
+     */
+    private File downloadProjectArchive(Document project) throws Exception {
         
-		Map<String, Object> context = new HashMap<String, Object>();
-    	context.put("projectName", projectName);
-    	context.put("datasourcesDir", dataSourcesDir);
-    	context.put("mockDatasourcesDir", mockDataSourcesDir);
-    	context.put("uiDir", uiDir);
-    	context.put("projectFileDir", projectFileDir);
-    	context.put("projectFileName", projectFileName);
-    	context.put("zipFileName", zipFileName);
-    	
-		context.put("screens", getScreenNames(project));
-		context.put("datasources", getDataSourceNames(project));
+        Map<String, Object> context = new HashMap<String, Object>();
+        context.put("projectName", projectName);
+        context.put("datasourcesDir", dataSourcesDir);
+        context.put("mockDatasourcesDir", mockDataSourcesDir);
+        context.put("uiDir", uiDir);
+        context.put("projectFileDir", projectFileDir);
+        context.put("projectFileName", projectFileName);
+        context.put("zipFileName", zipFileName);
 
-		context.put("includeTestJsp",  includeTestJsp);
-		context.put("testJspPathname", testJspPathname);
-		StringWriter jspWriter  = new StringWriter();
-		freemarkerConfig.getTemplate("TestJspFileContent.ftl").process(context, jspWriter);
-		context.put("jspFileContent", StringEscapeUtils.escapeHtml4(jspWriter.toString()));
+        context.put("screens", getScreenNames(project));
+        context.put("datasources", getDataSourceNames(project));
 
-		context.put("includeTestHtml",  includeTestHtml);
-		context.put("testHtmlPathname", testHtmlPathname);
-		StringWriter htmlWriter  = new StringWriter();
-		context.put("isomorphicDir", getIsomorphicDirPath(testHtmlPathname));
-		context.put("modulesDir", isSmartGWTBuild() ? "modules" : "system/modules");
-		freemarkerConfig.getTemplate("TestHtmlFileContent.ftl").process(context, htmlWriter);
-		context.put("htmlFileContent", StringEscapeUtils.escapeHtml4(htmlWriter.toString()));			
-		
-    	StringWriter messageWriter = new StringWriter();
-		freemarkerConfig.getTemplate("ProjectExportRequestParameter.ftl").process(context, messageWriter);
+        context.put("includeTestJsp",  includeTestJsp);
+        context.put("testJspPathname", testJspPathname);
+        StringWriter jspWriter  = new StringWriter();
+        freemarkerConfig.getTemplate("TestJspFileContent.ftl").process(context, jspWriter);
+        context.put("jspFileContent", StringEscapeUtils.escapeHtml4(jspWriter.toString()));
 
-		List<NameValuePair> params = new ArrayList<NameValuePair>();
-	    params.add(new BasicNameValuePair("_transaction", messageWriter.toString()));
-	    
-		HttpPost request = new HttpPost("/isomorphic/IDACall?isc_rpc=1");
-	    request.setEntity(new UrlEncodedFormEntity(params));
-		
-	    getLog().info(String.format("Downloading '%s' project export from '%s'...", projectName, host.getHostName()));
-	    
-		HttpResponse response = httpWorker.execute(request);
-		HttpEntity entity = response.getEntity();
-		
-    	if (! "application/zip".equals(entity.getContentType().getValue())) {
-    		throw new MojoExecutionException("Response does not contain zip file contents:\n" + EntityUtils.toString(entity));
-    	}
+        context.put("includeTestHtml",  includeTestHtml);
+        context.put("testHtmlPathname", testHtmlPathname);
+        StringWriter htmlWriter  = new StringWriter();
+        context.put("isomorphicDir", getIsomorphicDirPath(testHtmlPathname));
+        context.put("modulesDir", isSmartGWTBuild() ? "modules" : "system/modules");
+        freemarkerConfig.getTemplate("TestHtmlFileContent.ftl").process(context, htmlWriter);
+        context.put("htmlFileContent", StringEscapeUtils.escapeHtml4(htmlWriter.toString()));
 
-    	FileUtils.forceMkdir(workdir);
-    	FileUtils.cleanDirectory(workdir);
-		File zip = new File(workdir + "/" + zipFileName);
+        StringWriter messageWriter = new StringWriter();
+        freemarkerConfig.getTemplate("ProjectExportRequestParameter.ftl").process(context, messageWriter);
 
-		OutputStream outputStream = null;
+        List<NameValuePair> params = new ArrayList<NameValuePair>();
+        params.add(new BasicNameValuePair("_transaction", messageWriter.toString()));
+
+        HttpPost request = new HttpPost("/isomorphic/IDACall?isc_rpc=1");
+        request.setEntity(new UrlEncodedFormEntity(params));
+
+        getLog().info(String.format("Downloading '%s' project export from '%s'...", projectName, host.getHostName()));
+
+        HttpResponse response = httpWorker.execute(request);
+        HttpEntity entity = response.getEntity();
+
+        if (! "application/zip".equals(entity.getContentType().getValue())) {
+            throw new MojoExecutionException("Response does not contain zip file contents:\n" + EntityUtils.toString(entity));
+        }
+
+        FileUtils.forceMkdir(workdir);
+        FileUtils.cleanDirectory(workdir);
+        File zip = new File(workdir + "/" + zipFileName);
+
+        OutputStream outputStream = null;
         try {
             outputStream = new LoggingCountingOutputStream(new FileOutputStream(zip), entity.getContentLength());
             entity.writeTo(outputStream);
@@ -653,281 +653,284 @@ public class ImportMojo extends AbstractBaseMojo {
         } finally {
             IOUtils.closeQuietly(outputStream);
         }
-		
+
         return zip;
-	}
-	
-	/**
-	 * Calculates checksums for every file in the downloaded archive, writes them to
-	 * the given project file, and stores the result on disk at a folder named for 
-	 * {@link #projectFileDir}, relative to the given parent.
-	 * 
-	 * @param project metadata used to provide the names of requested assets
-	 * @param parent the parent directory
-	 * @throws Exception whenany error occurs
-	 */
-	private void writeProjectFile(Document project, File parent) throws Exception {
+    }
 
-		for (Node screen : getScreenNodes(project)) {
+    /**
+     * Calculates checksums for every file in the downloaded archive, writes them to
+     * the given project file, and stores the result on disk at a folder named for
+     * {@link #projectFileDir}, relative to the given parent.
+     *
+     * @param project metadata used to provide the names of requested assets
+     * @param parent the parent directory
+     * @throws Exception whenany error occurs
+     */
+    private void writeProjectFile(Document project, File parent) throws Exception {
 
-        	File file = getScreen(screen, parent);
-        	String checksum = Files.asByteSource(file).hash(Hashing.sha256()).toString();
+        for (Node screen : getScreenNodes(project)) {
 
-        	Element element = ((Element) screen).addElement("checksum");
-        	element.setText(checksum);			
-		}
-		for (Node datasource : getDataSourceNodes(project)) {
-			
-			File file = getDataSource(datasource, parent);
-        	String checksum = Files.asByteSource(file).hash(Hashing.sha256()).toString();
+            File file = getScreen(screen, parent);
+            String checksum = Files.asByteSource(file).hash(Hashing.sha256()).toString();
 
-        	Element element = ((Element) datasource).addElement("checksum");
-        	element.setText(checksum);
-		}
-		
-		// pretty print the file with changes
-		File projectFile = FileUtils.getFile(parent, projectFileDir, projectFileName);
-		OutputFormat purdy = OutputFormat.createPrettyPrint();
-		XMLWriter writer = new XMLWriter(new FileWriter(projectFile), purdy);
+            Element element = ((Element) screen).addElement("checksum");
+            element.setText(checksum);
+        }
+        for (Node datasource : getDataSourceNodes(project)) {
 
-		writer.write(project);
-		writer.flush();
-		writer.close();
-	}
-	
-	private void modifyWelcomeFiles() throws Exception {
+            File file = getDataSource(datasource, parent);
+            String checksum = Files.asByteSource(file).hash(Hashing.sha256()).toString();
 
-		File welcomeFilesConfig = new File(webappDir, "WEB-INF/web.xml");
-		if (! welcomeFilesConfig.exists()) {
-			String msg = String.format("No web.xml found at '%s'", welcomeFilesConfig.getCanonicalPath());
-			throw new RuntimeException(msg);
-		}
+            Element element = ((Element) datasource).addElement("checksum");
+            element.setText(checksum);
+        }
 
-		List<File> welcomeFiles = new ArrayList<File>();
-		
-		SAXReader reader = new SAXReader();
+        // pretty print the file with changes
+        File projectFile = FileUtils.getFile(parent, projectFileDir, projectFileName);
+        OutputFormat purdy = OutputFormat.createPrettyPrint();
+        XMLWriter writer = new XMLWriter(new FileWriter(projectFile), purdy);
+
+        writer.write(project);
+        writer.flush();
+        writer.close();
+    }
+
+    private void modifyWelcomeFiles() throws Exception {
+
+        File welcomeFilesConfig = new File(webappDir, "WEB-INF/web.xml");
+        if (! welcomeFilesConfig.exists()) {
+            String msg = String.format("No web.xml found at '%s'", welcomeFilesConfig.getCanonicalPath());
+            throw new RuntimeException(msg);
+        }
+
+        List<File> welcomeFiles = new ArrayList<File>();
+
+        SAXReader reader = new SAXReader();
         Document webXml = reader.read(welcomeFilesConfig);
         
         XPath xpath = webXml.createXPath("//jee:welcome-file");
         xpath.setNamespaceURIs(ImmutableMap.of("jee", "http://java.sun.com/xml/ns/javaee"));
         List<Node> list = xpath.selectNodes(webXml);
         for (Node node : list) {
-        	String val = node.getStringValue();
-        	File file = FileUtils.getFile(webappDir, val);
-        	if (! file.exists()) {
-        		getLog().warn(String.format("Welcome file '{}' not found.  Skipping.", val));
-        		continue;
-        	}
-        	welcomeFiles.add(file);
+            String val = node.getStringValue();
+            File file = FileUtils.getFile(webappDir, val);
+            if (! file.exists()) {
+                getLog().warn(String.format("Welcome file '{}' not found.  Skipping.", val));
+                continue;
+            }
+            welcomeFiles.add(file);
         }
         if (welcomeFiles.isEmpty()) {
-        	File jsp = FileUtils.getFile(webappDir, "index.jsp");
-        	File html = FileUtils.getFile(webappDir, "index.html");
-        	if (jsp.exists()) {
-        		welcomeFiles.add(jsp);
-        	}
-        	if (html.exists()) {
-        		welcomeFiles.add(html);
-        	}
+            File jsp = FileUtils.getFile(webappDir, "index.jsp");
+            File html = FileUtils.getFile(webappDir, "index.html");
+            if (jsp.exists()) {
+                welcomeFiles.add(jsp);
+            }
+            if (html.exists()) {
+                welcomeFiles.add(html);
+            }
         }
         
         for (File file : welcomeFiles) {
 
-        	String extension = FilenameUtils.getExtension(file.getCanonicalPath()).toLowerCase();
-        	
-        	Source source=new Source(file);
-        	OutputDocument target=new OutputDocument(source);
-        	
-    		net.htmlparser.jericho.Element scriptElement = 
-    				source.getElementById("isc-maven-plugin.reify-import.modifyWelcomeFiles");
+            String extension = FilenameUtils.getExtension(file.getCanonicalPath()).toLowerCase();
 
-        	Set<String> projectNames = new LinkedHashSet<String>();
-        	if (scriptElement != null) {
-	    		if ("jsp".equals(extension)) {
-	    			
-	    			String html = scriptElement.toString().trim();
-	    			int start = html.toLowerCase().indexOf("name=\"") + 6;
-					int end = html.indexOf("\"", start);
-					String val = html.substring(start, end);
-					
-					projectNames.addAll(Sets.newHashSet(val.split(",")));
-					
-	    		} else {
-	    			
-	    			String src = scriptElement.getAttributeValue("src");
-	    			int start = src.indexOf("projectName=") + 12;
-	    			int end = src.indexOf("&", start);
-					String val = src.substring(start, end);
-					
-					projectNames.addAll(Sets.newHashSet(val.split(",")));
-	    		}
-    		}
-        	projectNames.add(projectName);
+            Source source=new Source(file);
+            OutputDocument target=new OutputDocument(source);
 
-			String template = "LoadProjectScriptFragment.ftl";
-			if ("jsp".equals(extension)) {
-				template = "LoadProjectTagFragment.ftl";
-			}
-			
-    		Map context = ImmutableMap.of("projects", projectNames.toArray(), "draw", drawOnWelcomeFiles);
-    		StringWriter tagWriter = new StringWriter();
-    		freemarkerConfig.getTemplate(template).process(context, tagWriter);
-    		
-    		if (scriptElement != null) {
-    			target.replace(scriptElement, tagWriter.toString());
-    		} else {
-    			
-    			// for now just drop the script at the end of the body
-    			int index = source.getFirstElement("body").getEndTag().getBegin();
-    			target.insert(index, tagWriter.toString());
-    		}
-    		
-        	FileUtils.write(file, target.toString());
+            net.htmlparser.jericho.Element scriptElement =
+                    source.getElementById("isc-maven-plugin.reify-import.modifyWelcomeFiles");
+
+            Set<String> projectNames = new LinkedHashSet<String>();
+            if (scriptElement != null) {
+                if ("jsp".equals(extension)) {
+
+                    String html = scriptElement.toString().trim();
+                    int start = html.toLowerCase().indexOf("name=\"") + 6;
+                    int end = html.indexOf("\"", start);
+                    String val = html.substring(start, end);
+
+                    projectNames.addAll(Sets.newHashSet(val.split(",")));
+
+                } else {
+
+                    String src = scriptElement.getAttributeValue("src");
+                    int start = src.indexOf("projectName=") + 12;
+                    int end = src.indexOf("&", start);
+                    String val = src.substring(start, end);
+
+                    projectNames.addAll(Sets.newHashSet(val.split(",")));
+                }
+            }
+            projectNames.add(projectName);
+
+            String template = "LoadProjectScriptFragment.ftl";
+            if ("jsp".equals(extension)) {
+                template = "LoadProjectTagFragment.ftl";
+            }
+
+            Map context = ImmutableMap.of(
+                    "isomorphicDir", getIsomorphicDirPath(testHtmlPathname),
+                    "projects", projectNames.toArray(),
+                    "draw", drawOnWelcomeFiles);
+            StringWriter tagWriter = new StringWriter();
+            freemarkerConfig.getTemplate(template).process(context, tagWriter);
+
+            if (scriptElement != null) {
+                target.replace(scriptElement, tagWriter.toString());
+            } else {
+
+                // for now just drop the script at the end of the body
+                int index = source.getFirstElement("body").getEndTag().getBegin();
+                target.insert(index, tagWriter.toString());
+            }
+
+            FileUtils.write(file, target.toString());
         }
-	}
-	
-	/*
-	 * Convenience methods for returning various representations of screens from xml document
-	 */
-	private List<Node> getScreenNodes(Document project) {
-		return project.selectNodes("/Project/screens/root/children/TreeNode");
-	}
-	private List<String> getScreenNames(Document project) {
-		List<Node> nodes = getScreenNodes(project);
-		List<String> names = new ArrayList<String>();
-		for (Node node : nodes) {
-			names.add(getScreenName(node));
-		}
-		return names;
-	}
-	private String getScreenName(Node screen) {
-		return screen.valueOf("fileName");
-	}
-	private File getScreen(Node metadata, File parent) {
-		return FileUtils.getFile(parent, uiDir, getScreenName(metadata) + ".ui.xml");
-	}
-	
-	/*
-	 * Convenience methods for returning various representations of datasources from xml doc
-	 */
-	private List<Node> getDataSourceNodes(Document project) {
-		return project.selectNodes("/Project/datasources/Record");
-	}
-	private List<String> getDataSourceNames(Document project) {
-		List<Node> nodes = getDataSourceNodes(project);
-		List<String> names = new ArrayList<String>();
-		for (Node node : nodes) {
-			names.add(getDataSourceName(node));
-		}
-		return names;
-	}
-	private String getDataSourceName(Node ds) {
-		return ds.valueOf("dsName");
-	}
-	private File getDataSource(Node metadata, File parent) {
+    }
 
-		String name = getDataSourceName(metadata);
-    	
-		// Check 'mock' subdirectory first, fallback to datasourcesDir if not found.
-		File file = FileUtils.getFile(parent, mockDataSourcesDir, name + ".ds.xml");
-    	if (! file.exists()) {
-        	file = FileUtils.getFile(parent, dataSourcesDir, name + ".ds.xml");
-    	}
-		return file;
-	}	
-	
-	/*
-	 * Setters to allow execution from an Ant build (ImportTask)
-	 */
-	protected void setHost(String uri) {
-		this.host = URIUtils.extractHost(URI.create(uri));
-	}
+    /*
+     * Convenience methods for returning various representations of screens from xml document
+     */
+    private List<Node> getScreenNodes(Document project) {
+        return project.selectNodes("/Project/screens/root/children/TreeNode");
+    }
+    private List<String> getScreenNames(Document project) {
+        List<Node> nodes = getScreenNodes(project);
+        List<String> names = new ArrayList<String>();
+        for (Node node : nodes) {
+            names.add(getScreenName(node));
+        }
+        return names;
+    }
+    private String getScreenName(Node screen) {
+        return screen.valueOf("fileName");
+    }
+    private File getScreen(Node metadata, File parent) {
+        return FileUtils.getFile(parent, uiDir, getScreenName(metadata) + ".ui.xml");
+    }
 
-	protected void setWorkdir(File workdir) {
-		this.workdir = workdir;
-	}
+    /*
+     * Convenience methods for returning various representations of datasources from xml doc
+     */
+    private List<Node> getDataSourceNodes(Document project) {
+        return project.selectNodes("/Project/datasources/Record");
+    }
+    private List<String> getDataSourceNames(Document project) {
+        List<Node> nodes = getDataSourceNodes(project);
+        List<String> names = new ArrayList<String>();
+        for (Node node : nodes) {
+            names.add(getDataSourceName(node));
+        }
+        return names;
+    }
+    private String getDataSourceName(Node ds) {
+        return ds.valueOf("dsName");
+    }
+    private File getDataSource(Node metadata, File parent) {
 
-	protected void setWebappDir(File webappDir) {
-		this.webappDir = webappDir;
-	}
+        String name = getDataSourceName(metadata);
 
-	protected void setSmartclientRuntimeDir(File smartclientRuntimeDir) {
-		this.smartclientRuntimeDir = smartclientRuntimeDir;
-	}
+        // Check 'mock' subdirectory first, fallback to datasourcesDir if not found.
+        File file = FileUtils.getFile(parent, mockDataSourcesDir, name + ".ds.xml");
+        if (! file.exists()) {
+            file = FileUtils.getFile(parent, dataSourcesDir, name + ".ds.xml");
+        }
+        return file;
+    }
 
-	protected void setIncludeTestJsp(boolean includeTestJsp) {
-		this.includeTestJsp = includeTestJsp;
-	}
+    /*
+     * Setters to allow execution from an Ant build (ImportTask)
+     */
+    protected void setHost(String uri) {
+        this.host = URIUtils.extractHost(URI.create(uri));
+    }
 
-	protected void setTestJspPathname(String testJspPathname) {
-		this.testJspPathname = testJspPathname;
-	}
+    protected void setWorkdir(File workdir) {
+        this.workdir = workdir;
+    }
 
-	protected void setIncludeTestHtml(boolean includeTestHtml) {
-		this.includeTestHtml = includeTestHtml;
-	}
+    protected void setWebappDir(File webappDir) {
+        this.webappDir = webappDir;
+    }
 
-	protected void setTestHtmlPathname(String testHtmlPathname) {
-		this.testHtmlPathname = testHtmlPathname;
-	}
+    protected void setSmartclientRuntimeDir(File smartclientRuntimeDir) {
+        this.smartclientRuntimeDir = smartclientRuntimeDir;
+    }
 
-	protected void setDataSourcesDir(String dataSourcesDir) {
-		this.dataSourcesDir = dataSourcesDir;
-	}
+    protected void setIncludeTestJsp(boolean includeTestJsp) {
+        this.includeTestJsp = includeTestJsp;
+    }
 
-	protected void setMockDataSourcesDir(String mockDataSourcesDir) {
-		this.mockDataSourcesDir = mockDataSourcesDir;
-	}
+    protected void setTestJspPathname(String testJspPathname) {
+        this.testJspPathname = testJspPathname;
+    }
 
-	protected void setSkipValidationOnImport(boolean skipValidationOnImport) {
-		this.skipValidationOnImport = skipValidationOnImport;
-	}
+    protected void setIncludeTestHtml(boolean includeTestHtml) {
+        this.includeTestHtml = includeTestHtml;
+    }
 
-	protected void setValidationFailureThreshold(Severity validationFailureThreshold) {
-		this.validationFailureThreshold = validationFailureThreshold;
-	}
+    protected void setTestHtmlPathname(String testHtmlPathname) {
+        this.testHtmlPathname = testHtmlPathname;
+    }
 
-	protected void setUiDir(String uiDir) {
-		this.uiDir = uiDir;
-	}
+    protected void setDataSourcesDir(String dataSourcesDir) {
+        this.dataSourcesDir = dataSourcesDir;
+    }
 
-	protected void setProjectFileDir(String projectFileDir) {
-		this.projectFileDir = projectFileDir;
-	}
+    protected void setMockDataSourcesDir(String mockDataSourcesDir) {
+        this.mockDataSourcesDir = mockDataSourcesDir;
+    }
 
-	protected void setModifyWelcomeFiles(boolean modifyWelcomeFiles) {
-		this.modifyWelcomeFiles = modifyWelcomeFiles;
-	}
+    protected void setSkipValidationOnImport(boolean skipValidationOnImport) {
+        this.skipValidationOnImport = skipValidationOnImport;
+    }
 
-	protected void setDrawOnWelcomeFiles(boolean drawOnWelcomeFiles) {
-		this.drawOnWelcomeFiles = drawOnWelcomeFiles;
-	}
+    protected void setValidationFailureThreshold(Severity validationFailureThreshold) {
+        this.validationFailureThreshold = validationFailureThreshold;
+    }
 
-	protected void setProjectName(String projectName) {
-		this.projectName = projectName;
-	}
+    protected void setUiDir(String uiDir) {
+        this.uiDir = uiDir;
+    }
 
-	protected void setProjectFileName(String projectFileName) {
-		this.projectFileName = projectFileName;
-	}
+    protected void setProjectFileDir(String projectFileDir) {
+        this.projectFileDir = projectFileDir;
+    }
 
-	protected void setZipFileName(String zipFileName) {
-		this.zipFileName = zipFileName;
-	}
+    protected void setModifyWelcomeFiles(boolean modifyWelcomeFiles) {
+        this.modifyWelcomeFiles = modifyWelcomeFiles;
+    }
 
-	protected void setSkipOverwriteProtection(boolean skipOverwriteProtection) {
-		this.skipOverwriteProtection = skipOverwriteProtection;
-	}
+    protected void setDrawOnWelcomeFiles(boolean drawOnWelcomeFiles) {
+        this.drawOnWelcomeFiles = drawOnWelcomeFiles;
+    }
 
-	protected void setCredentials(UsernamePasswordCredentials credentials) {
-		this.credentials = credentials;
-	}
+    protected void setProjectName(String projectName) {
+        this.projectName = projectName;
+    }
 
-	protected void setProxy(Proxy proxy) {
-		this.proxy = proxy;
-	}
+    protected void setProjectFileName(String projectFileName) {
+        this.projectFileName = projectFileName;
+    }
 
-	
-	
-	
+    protected void setZipFileName(String zipFileName) {
+        this.zipFileName = zipFileName;
+    }
+
+    protected void setSkipOverwriteProtection(boolean skipOverwriteProtection) {
+        this.skipOverwriteProtection = skipOverwriteProtection;
+    }
+
+    protected void setCredentials(UsernamePasswordCredentials credentials) {
+        this.credentials = credentials;
+    }
+
+    protected void setProxy(Proxy proxy) {
+        this.proxy = proxy;
+    }
+
+
+
+
 }
