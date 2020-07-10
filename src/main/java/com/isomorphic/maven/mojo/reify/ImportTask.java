@@ -153,7 +153,7 @@ public class ImportTask extends Task {
 
 	/**
 	 * Change the default value of <strong>${basedir}/build/reify</strong>.
-	 * 
+	 * @param workdir the new value
 	 * @see  ImportMojo#workdir
 	 */
 	public void setWorkdir(String workdir) {
@@ -163,7 +163,7 @@ public class ImportTask extends Task {
 
 	/**
 	 * Change the default value of <strong>${basedir}/war</strong>.
-	 * 
+	 * @param webappDir the new value
 	 * @see ImportMojo#webappDir
 	 */
 	public void setWebappDir(String webappDir) {
@@ -172,7 +172,7 @@ public class ImportTask extends Task {
 
 	/**
 	 * Change the default value of <Strong>${basedir}/war/isomorphic</strong>.
-	 * 
+	 * @param smartclientRuntimeDir the new value
 	 * @see ImportMojo#smartclientRuntimeDir
 	 */
 	public void setSmartclientRuntimeDir(String smartclientRuntimeDir) {
@@ -181,7 +181,7 @@ public class ImportTask extends Task {
 
 	/**
 	 * Change the default value of <strong>false</strong>.
-	 * 
+	 * @param includeTestJsp the new value
 	 * @see ImportMojo#includeTestJsp
 	 */
 	public void setIncludeTestJsp(boolean includeTestJsp) {
@@ -190,7 +190,7 @@ public class ImportTask extends Task {
 
 	/**
 	 * Change the default value of <Strong>{@link #projectName}.run.jsp</strong>.
-	 * 
+	 * @param testJspPathname the new value
 	 * @see ImportMojo#testJspPathname
 	 */
 	public void setTestJspPathname(String testJspPathname) {
@@ -199,7 +199,7 @@ public class ImportTask extends Task {
 
 	/**
 	 * Change the default value of <strong>false</strong>.
-	 * 
+	 * @param includeTestHtml the new value
 	 * @see ImportMojo#includeTestHtml
 	 */
 	public void setIncludeTestHtml(boolean includeTestHtml) {
@@ -208,7 +208,7 @@ public class ImportTask extends Task {
 
 	/**
 	 * Change the default value of <strong>{@link #projectName}.run.html</strong>.
-	 * 
+	 * @param  testHtmlPathname the new value
 	 * @see ImportMojo#testHtmlPathname
 	 */
 	public void setTestHtmlPathname(String testHtmlPathname) {
@@ -217,7 +217,7 @@ public class ImportTask extends Task {
 
 	/**
 	 * Change the default value of WEB-INF/ds.
-	 * 
+	 * @param dataSourcesDir the new value
 	 * @see ImportMojo#dataSourcesDir
 	 */
 	public void setDataSourcesDir(String dataSourcesDir) {
@@ -226,7 +226,7 @@ public class ImportTask extends Task {
 
 	/**
 	 * Change the default value of <strong>{@link #dataSourcesDir}/mock</strong>.
-	 * 
+	 * @param mockDataSourcesDir the new value
 	 * @see ImportMojo#mockDataSourcesDir
 	 */
 	public void setMockDataSourcesDir(String mockDataSourcesDir) {
@@ -235,7 +235,7 @@ public class ImportTask extends Task {
 
 	/**
 	 * Change the default value of <strong>false</strong>.
-	 * 
+	 * @param skipValidationOnImport the new value
 	 * @see ImportMojo#skipValidationOnImport
 	 */
 	public void setSkipValidationOnImport(boolean skipValidationOnImport) {
@@ -245,7 +245,7 @@ public class ImportTask extends Task {
 	/**
 	 * Change the default value of <strong>ERROR</strong>.  
 	 * Other legal values include INFO and WARN.
-	 * 
+	 * @param validationFailureThreshold the new value
 	 * @see ImportMojo#validationFailureThreshold
 	 */
 	public void setValidationFailureThreshold(Severity validationFailureThreshold) {
@@ -254,7 +254,7 @@ public class ImportTask extends Task {
 
 	/**
 	 * Change the default value of <strong>WEB-INF/ui</strong>.
-	 * 
+	 * @param uiDir the new value
 	 * @see ImportMojo#uiDir
 	 */
 	public void setUiDir(String uiDir) {
@@ -263,7 +263,7 @@ public class ImportTask extends Task {
 
 	/**
 	 * Change the default value of <strong>WEB-INF/ui</strong>.
-	 * 
+	 * @param projectFileDir the new value
 	 * @see ImportMojo#projectFileDir
 	 */
 	public void setProjectFileDir(String projectFileDir) {
@@ -272,7 +272,7 @@ public class ImportTask extends Task {
 
 	/**
 	 * Change the default value of <strong>false</strong>.
-	 * 
+	 * @param modifyWelcomeFiles the new value
 	 * @see ImportMojo#modifyWelcomeFiles
 	 */
 	public void setModifyWelcomeFiles(boolean modifyWelcomeFiles) {
@@ -281,7 +281,7 @@ public class ImportTask extends Task {
 
 	/**
 	 * Change the default value of <strong>false</strong>.
-	 * 
+	 * @param drawOnWelcomeFiles the new value
 	 * @see ImportMojo#drawOnWelcomeFiles
 	 */
 	public void setDrawOnWelcomeFiles(boolean drawOnWelcomeFiles) {
@@ -290,7 +290,7 @@ public class ImportTask extends Task {
 
 	/**
 	 * Change the default value of <strong>${ant.project.name}</strong>.
-	 * 
+	 * @param projectName the new value
 	 * @see ImportMojo#projectName
 	 */
 	public void setProjectName(String projectName) {
@@ -299,6 +299,7 @@ public class ImportTask extends Task {
 
 	/**
 	 * Set the username needed to authenticate to <a href="https://create.reify.com/"></a>
+	 * @param username the new value
 	 */
 	public void setUsername(String username) {
 		this.username = username;
@@ -306,6 +307,7 @@ public class ImportTask extends Task {
 
 	/**
 	 * Set the password needed to authenticate to <a href="https://create.reify.com/"></a>
+	 * @param password the new value
 	 */
 	public void setPassword(String password) {
 		this.password = password;

@@ -101,7 +101,7 @@ public abstract class AbstractPackagerMojo extends AbstractBaseMojo {
      * Note that if no value is provided, an attempt is made to discover the date of the
      * latest distribution currently published to the Isomorphic build server.
      * <br>
-     * <b>Default value is</b>: <tt>The date of the most recent distribution</tt>.
+     * <b>Default value is</b>: <code>The date of the most recent distribution</code>.
      * 
      * @since 1.0.0
      */
