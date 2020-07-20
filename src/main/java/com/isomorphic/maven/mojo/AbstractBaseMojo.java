@@ -27,8 +27,8 @@ import org.slf4j.LoggerFactory;
 
 public abstract class AbstractBaseMojo extends AbstractMojo {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(AbstractBaseMojo.class);
-	
+    private static final Logger LOGGER = LoggerFactory.getLogger(AbstractBaseMojo.class);
+
     @Parameter(readonly = true, defaultValue = "${repositorySystemSession}")
     protected RepositorySystemSession repositorySystemSession;
 
@@ -50,62 +50,59 @@ public abstract class AbstractBaseMojo extends AbstractMojo {
     @Component
     protected Settings settings;
 
-	@Component 
+    @Component
     private SettingsDecrypter settingsDecrypter; 
-	
-	@Override
-	public abstract void execute() throws MojoExecutionException, MojoFailureException;
 
-	public UsernamePasswordCredentials getCredentials(String serverId) {
-		Server server = getDecryptedServer(serverId);
+    @Override
+    public abstract void execute() throws MojoExecutionException, MojoFailureException;
+
+    public UsernamePasswordCredentials getCredentials(String serverId) {
+        Server server = getDecryptedServer(serverId);
         String username = null;
         String password = null;
         if (server != null) {
             username = server.getUsername();
             password = server.getPassword();
-        } else {
-            LOGGER.warn("No server configured with id '{}'.  Will be unable to authenticate.",
-                serverId);
+            return new UsernamePasswordCredentials(username, password);
         }
- 
-        return new UsernamePasswordCredentials(username, password);
-	}
-	
-	/**
-	 * Returns user credentials for the server with the given id, as kept in Maven
-	 * settings.
-	 * <p>
-	 * Refer to http://maven.apache.org/settings.html#Servers
-	 * 
-	 * @param serverId the id of the server containing the authentication credentials
-	 * @return the Authentication credentials for the given server with the given id
-	 * 
+        return null;
+    }
+
+    /**
+     * Returns user credentials for the server with the given id, as kept in Maven
+     * settings.
+     * <p>
+     * Refer to http://maven.apache.org/settings.html#Servers
+     *
+     * @param serverId the id of the server containing the authentication credentials
+     * @return the Authentication credentials for the given server with the given id
+     *
      */
     protected Authentication getAuthentication(String serverId) {
-		
-		Authentication authentication = null;
-		Server server = getDecryptedServer(serverId);
-		
-		if (server != null) {
-	    	authentication = new AuthenticationBuilder()
-				.addUsername(server.getUsername())
-				.addPassword(server.getPassword())
-				.addPrivateKey(server.getPrivateKey(), server.getPassphrase())
-				.build();
-		}
-		
-		return authentication;
-	}
-	
-	/**
-	 * Decrypt settings and return the server element with the given id.  Useful for e.g., reading encrypted 
-	 * user credentials.
-	 * <p>
-	 * Refer to http://maven.apache.org/guides/mini/guide-encryption.html
-	 * 
-	 * @param id the id of the server to be decrypted
-	 * @return a Server with its protected elements decrypted, if one is found with the given id.  Null otherwise.
-	 */
+
+        Authentication authentication = null;
+        Server server = getDecryptedServer(serverId);
+
+        if (server != null) {
+            authentication = new AuthenticationBuilder()
+                .addUsername(server.getUsername())
+                .addPassword(server.getPassword())
+                .addPrivateKey(server.getPrivateKey(), server.getPassphrase())
+                .build();
+        }
+
+        return authentication;
+    }
+
+    /**
+     * Decrypt settings and return the server element with the given id.  Useful for e.g., reading encrypted
+     * user credentials.
+     * <p>
+     * Refer to http://maven.apache.org/guides/mini/guide-encryption.html
+     *
+     * @param id the id of the server to be decrypted
+     * @return a Server with its protected elements decrypted, if one is found with the given id.  Null otherwise.
+     */
     private Server getDecryptedServer(String id) { 
         final SettingsDecryptionRequest settingsDecryptionRequest = new DefaultSettingsDecryptionRequest(); 
         settingsDecryptionRequest.setServers(settings.getServers()); 
@@ -113,13 +110,13 @@ public abstract class AbstractBaseMojo extends AbstractMojo {
         List<Server> servers = decrypt.getServers();
         
         for (Server server : servers) {
-        	if (server.getId().equals(id)) {
-        		return server;
-        	}
+            if (server.getId().equals(id)) {
+                return server;
+            }
         }
         return null;
     } 
     
     
-	
+
 }
