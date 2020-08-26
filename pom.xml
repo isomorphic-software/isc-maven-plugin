@@ -21,7 +21,7 @@
 
     <groupId>com.isomorphic</groupId>
     <artifactId>isc-maven-plugin</artifactId>
-    <version>1.4.2-SNAPSHOT</version>
+    <version>1.4.2</version>
     <packaging>maven-plugin</packaging>
 
     <name>isc-maven-plugin</name>
