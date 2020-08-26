@@ -130,10 +130,20 @@ import net.htmlparser.jericho.Source;
 public class ImportMojo extends AbstractBaseMojo {
 
     /**
+     * The full URL of the Reify site hosting your project/s.  Useful when running your own
+     * <a href="https://www.smartclient.com/smartclient-latest/isomorphic/system/reference/?id=group..reifyOnSite">Reify OnSite</a>
+     * instance, at e.g., 'http://localhost:8080/create/'.
+     *
+     * @since 1.4.2
+     */
+    @Parameter(property = "serverUrl", defaultValue = "https://create.reify.com")
+    protected String serverUrl;
+
+    /**
      * The id of a <a href="http://maven.apache.org/settings.html#Servers">server
      * configuration</a> containing authentication credentials for the
-     * reify.com website, used to download exported projects.
-     * 
+     * Reify site specified by {@link ImportMojo#serverUrl}, used to download exported projects.
+     *
      * @since 1.4.0
      */
     @Parameter(property = "serverId", defaultValue = "smartclient-developer")
@@ -142,15 +152,15 @@ public class ImportMojo extends AbstractBaseMojo {
     /**
      * The directory to which the archive is downloaded and unpacked.  Note that this is
      * not the final destination of exported assets.  For that, see {@link ImportMojo#webappDir}.
-     * 
+     *
      * @since 1.4.0
      */
     @Parameter(property = "workdir", defaultValue = "${project.build.directory}/reify")
     protected File workdir;
-    
+
     /**
      * The directory containing web application sources.
-     * 
+     *
      * @since 1.4.0
      */
     @Parameter(property = "webappDir", defaultValue = "${project.basedir}/src/main/webapp")
@@ -160,74 +170,74 @@ public class ImportMojo extends AbstractBaseMojo {
      * The directory containing the Isomorphic runtime.  The default value is appropriate for
      * the path created by a typical mvn war:exploded invocation.  Alternatively, set this to
      * the path created by mvn jetty:run, or any other path where an appropriate SmartClient
-     * runtime may be found.  
-     * 
+     * runtime may be found.
+     *
      * Note that SmartGWT users may need to change the value to something like:
      * <p>
      * <code>
      * ${project.build.directory}/${project.build.finalName}/${gwtModuleName}/sc
      * </code>
-     * 
+     *
      * @since 1.4.0
      */
     @Parameter(property = "smartclientRuntimeDir", defaultValue="${project.build.directory}/${project.build.finalName}/isomorphic")
-    protected File smartclientRuntimeDir;    
-    
+    protected File smartclientRuntimeDir;
+
     /**
      * If true, the import process will create a JSP launcher that loads the given project/s.
      * The file's name and location can be configured via {@link #testJspPathname}.
-     * 
-     * @since 1.4.0 
+     *
+     * @since 1.4.0
      */
     @Parameter(property = "includeTestJsp", defaultValue = "false")
     protected boolean includeTestJsp;
 
     /**
-     * The name (and optional path, relative to {@link #webappDir}) of the JSP launcher to be 
+     * The name (and optional path, relative to {@link #webappDir}) of the JSP launcher to be
      * created when {@link #includeTestJsp} is true.
-     * 
-     * @since 1.4.0  
+     *
+     * @since 1.4.0
      */
     @Parameter(property = "testJspPathname", defaultValue = "${projectName}.run.jsp")
     protected String testJspPathname;
-    
+
     /**
      * If true, the import process will create an HTML launcher that loads the given project/s.
      * The file's name and location can be configured via {@link #testHtmlPathname}.
-     * 
-     * @since 1.4.0  
+     *
+     * @since 1.4.0
      */
     @Parameter(property = "includeTestHtml", defaultValue = "false")
     protected boolean includeTestHtml;
 
     /**
-     * The name (and optional path, relative to {@link #webappDir}) of the HTML launcher to be 
+     * The name (and optional path, relative to {@link #webappDir}) of the HTML launcher to be
      * created when {@link #includeTestHtml} is true.
-     * 
-     * @since 1.4.0 
+     *
+     * @since 1.4.0
      */
     @Parameter(property = "testHtmlPathname", defaultValue = "${projectName}.run.html")
     protected String testHtmlPathname;
-    
+
     /**
-     * The directory, relative to {@link #webappDir}), in which your project's working 
+     * The directory, relative to {@link #webappDir}), in which your project's working
      * datasources (i.e., other than mocks) reside.
      * <p>
-     * Note that this will need to conform to the webapp's server.properties 
+     * Note that this will need to conform to the webapp's server.properties
      * <code>project.datasources</code> configuration.
-     * 
-     * @since 1.4.0 
+     *
+     * @since 1.4.0
      */
     @Parameter(property = "dataSourcesDir", defaultValue = "WEB-INF/ds")
     protected String dataSourcesDir;
 
     /**
-     * The directory, relative to {@link #webappDir}), in which exported MockDataSources 
+     * The directory, relative to {@link #webappDir}), in which exported MockDataSources
      * should ultimately reside.
      * <p>
-     * Note that this will need to conform to the webapp's server.properties 
-     * <code>project.datasources</code> configuration.  
-     * 
+     * Note that this will need to conform to the webapp's server.properties
+     * <code>project.datasources</code> configuration.
+     *
      * @since 1.4.0
      */
     @Parameter(property = "mockDataSourcesDir", defaultValue = "WEB-INF/ds/mock")
@@ -235,70 +245,70 @@ public class ImportMojo extends AbstractBaseMojo {
 
     /**
      * When true, DataSource validation will be skipped following import.  The
-     * {@link ValidateMojo} can still be executed independently at any time.  
-     *  
+     * {@link ValidateMojo} can still be executed independently at any time.
+     *
      * @since 1.4.0
      */
     @Parameter(property = "skipValidationOnImport", defaultValue = "false")
-    protected boolean skipValidationOnImport;    
-    
+    protected boolean skipValidationOnImport;
+
     /**
-     * One of INFO, ERROR, WARN that will determine the level of severity tolerated in any 
+     * One of INFO, ERROR, WARN that will determine the level of severity tolerated in any
      * validation error.  Any error at or above this threshold will result in "BUILD FAILURE".
-     * 
+     *
      * @since 1.4.0
      */
     @Parameter(property = "validationFailureThreshold", defaultValue = "ERROR")
-    protected Severity validationFailureThreshold;    
-    
+    protected Severity validationFailureThreshold;
+
     /**
-     * The directory in which exported screens should ultimately reside, relative to 
-     * {@link #webappDir}.  Note that this will need to conform to the webapp's 
+     * The directory in which exported screens should ultimately reside, relative to
+     * {@link #webappDir}.  Note that this will need to conform to the webapp's
      * server.properties <code>project.ui</code> configuration.
-     * 
-     * @since 1.4.0 
+     *
+     * @since 1.4.0
      */
     @Parameter(property = "uiDir", defaultValue = "WEB-INF/ui")
     protected String uiDir;
-    
+
     /**
      * The directory to which the exported project file should ultimately reside, relative to
-     * {@link #webappDir}.  Note that this will need to conform to the webapp's 
-     * server.properties <code>project.project</code> configuration. 
-     * 
-     * @since 1.4.0 
+     * {@link #webappDir}.  Note that this will need to conform to the webapp's
+     * server.properties <code>project.project</code> configuration.
+     *
+     * @since 1.4.0
      */
     @Parameter(property="projectFileDir", defaultValue = "WEB-INF/ui")
     protected String projectFileDir;
-    
+
     /**
-     * If true, the project's welcome files will be modified to include a script block that 
-     * loads the imported project.  Note that the loaded project is not drawn - for that, 
-     * refer to {@link #drawOnWelcomeFiles}.  Welcome files are determined by scanning the 
-     * project's web.xml file for the standard welcome-files declaration.  If none is found, 
+     * If true, the project's welcome files will be modified to include a script block that
+     * loads the imported project.  Note that the loaded project is not drawn - for that,
+     * refer to {@link #drawOnWelcomeFiles}.  Welcome files are determined by scanning the
+     * project's web.xml file for the standard welcome-files declaration.  If none is found,
      * the webroot is searched for files named index.jsp and index.html.
      * <p>
-     * Subsequent imports of other projects append the newly imported project name to the 
-     * existing one/s.  
-     * 
-     * @since 1.4.0 
+     * Subsequent imports of other projects append the newly imported project name to the
+     * existing one/s.
+     *
+     * @since 1.4.0
      */
     @Parameter(property="modifyWelcomeFiles", defaultValue = "false")
     protected boolean modifyWelcomeFiles;
-    
+
     /**
-     * Like {@link #modifyWelcomeFiles}, except this variant will draw the project's first 
+     * Like {@link #modifyWelcomeFiles}, except this variant will draw the project's first
      * screen when all of its screens have been loaded.
-     * 
-     * @since 1.4.0 
+     *
+     * @since 1.4.0
      */
     @Parameter(property="drawOnWelcomeFiles", defaultValue = "false")
     protected boolean drawOnWelcomeFiles;
-    
+
     /**
      * The name of the project as it's known by the reify.com environment.
-     * 
-     * @since 1.4.0 
+     *
+     * @since 1.4.0
      */
     @Parameter(property="projectName", defaultValue = "${project.artifactId}", required=true)
     protected String projectName;
@@ -307,33 +317,26 @@ public class ImportMojo extends AbstractBaseMojo {
 
     /**
      * When a project is imported, its screen and datasource assets are marked with a checksum
-     * representing the contents of each file.  Subsequent imports are preceded by a check to 
+     * representing the contents of each file.  Subsequent imports are preceded by a check to
      * make sure each of these checksums still match the file's content.  In the event that
-     * any do not, the import fails by default.  
+     * any do not, the import fails by default.
      * <p>
      * To override this behavior, you may set this parameter value to <code>true</code>, in
      * which case the file will simply be overwritten.  Use this feature at your own risk.
-     * 
-     * @since 1.4.0 
+     *
+     * @since 1.4.0
      */
     @Parameter(property="skipOverwriteProtection", defaultValue = "false")
     private boolean skipOverwriteProtection;
-    
+
     private UsernamePasswordCredentials credentials;
     private Configuration freemarkerConfig;
     private Proxy proxy;
-    
+
     private HttpHost host;
     private HttpRequestManager httpWorker;
 
     public ImportMojo() {
-
-        // undocumented parameters to allow for testing against QA environment
-        String uri = System.getProperty("host");
-        if (uri == null) {
-            uri = "https://create.reify.com";
-        }
-        setHost(uri);
 
         // we'll use a freemarker template to construct the request for project metadata
         ClassTemplateLoader ctl = new ClassTemplateLoader(getClass(), "");
@@ -353,6 +356,8 @@ public class ImportMojo extends AbstractBaseMojo {
     public void execute() throws MojoExecutionException, MojoFailureException {
 
         try {
+
+            setHost(serverUrl);
 
             // derive filenames from project name
             zipFileName = projectName + ".proj.zip";

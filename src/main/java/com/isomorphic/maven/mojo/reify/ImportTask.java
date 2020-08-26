@@ -59,6 +59,7 @@ import com.isomorphic.util.ErrorMessage.Severity;
  */
 public class ImportTask extends Task {
 
+	protected String serverUrl = "https://create.reify.com";
 	protected String workdir;
 	protected String webappDir = "war";
 	protected String smartclientRuntimeDir;    
@@ -95,7 +96,8 @@ public class ImportTask extends Task {
 		if (projectName == null) {
 			projectName = getProject().getName();
 		}
-		
+
+		mojo.setHost(String.valueOf(serverUrl));
 		mojo.setCredentials(new UsernamePasswordCredentials(username, password));
 
 		mojo.setWorkdir(workdir != null ? new File(workdir) : new File(getProject().getBaseDir(), "build/reify"));
@@ -117,12 +119,7 @@ public class ImportTask extends Task {
 		mojo.setProjectFileName(projectFileName != null ? projectFileName : projectName + "proj.xml");
 		mojo.setZipFileName(zipFileName != null ? zipFileName : projectName + "proj.zip");
 
-		// undocumented parameter to allow for testing against QA environment
-		Object host = PropertyHelper.getProperty(getProject(), "host");
-		if (host != null) {
-			mojo.setHost(String.valueOf(host));
-		}		
-		
+
 		String proxyHost = System.getProperty("http.proxyHost");
 		String proxyPort = System.getProperty("http.proxyPort");
 		String proxyUser = System.getProperty("http.proxyUser");
@@ -149,6 +146,15 @@ public class ImportTask extends Task {
 			throw new BuildException(e);
 		}
 		
+	}
+
+	/**
+	 * Change the default value of <strong>https://create.reify.com</strong>.
+	 * @param serverUrl the new value
+	 * @see  ImportMojo#serverUrl
+	 */
+	public void setServerUrl(String serverUrl) {
+		this.serverUrl = serverUrl;
 	}
 
 	/**
