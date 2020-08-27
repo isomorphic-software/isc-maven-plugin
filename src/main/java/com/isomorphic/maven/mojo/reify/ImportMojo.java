@@ -357,6 +357,11 @@ public class ImportMojo extends AbstractBaseMojo {
 
         try {
 
+            // Preserve backward compatibility for unsupported / undocumented 'host' property, potentially leaked to
+            // early adopters of Reify OnSite
+            if (System.getProperty("host") != null) {
+                serverUrl = System.getProperty("host");
+            }
             setHost(serverUrl);
 
             // derive filenames from project name
