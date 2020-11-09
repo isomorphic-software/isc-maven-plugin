@@ -21,7 +21,7 @@
 
     <groupId>com.isomorphic</groupId>
     <artifactId>isc-maven-plugin</artifactId>
-    <version>1.4.4-SNAPSHOT</version>
+    <version>1.4.4</version>
     <packaging>maven-plugin</packaging>
 
     <name>isc-maven-plugin</name>
@@ -148,6 +148,7 @@
                      the release branch and explicit site deployment from there.  e.g.,
 
                      git checkout REL-1.1.1
+                     mvn site:site
                      mvn com.github.github:site-maven-plugin:site
                  -->
                 <groupId>com.github.github</groupId>
