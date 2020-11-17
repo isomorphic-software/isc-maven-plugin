@@ -106,7 +106,7 @@
 <a class="jxr_linenumber" name="96" href="#96">96</a>  <em class="jxr_javadoccomment"> *         &amp;lt;plugin&amp;gt;</em>
 <a class="jxr_linenumber" name="97" href="#97">97</a>  <em class="jxr_javadoccomment"> *             &amp;lt;groupId&amp;gt;com.isomorphic&amp;lt;/groupId&amp;gt;</em>
 <a class="jxr_linenumber" name="98" href="#98">98</a>  <em class="jxr_javadoccomment"> *             &amp;lt;artifactId&amp;gt;isc-maven-plugin&amp;lt;/artifactId&amp;gt;</em>
-<a class="jxr_linenumber" name="99" href="#99">99</a>  <em class="jxr_javadoccomment"> *             &amp;lt;version&amp;gt;1.4.0-SNAPSHOT&amp;lt;/version&amp;gt;</em>
+<a class="jxr_linenumber" name="99" href="#99">99</a>  <em class="jxr_javadoccomment"> *             &amp;lt;version&amp;gt;1.4.5&amp;lt;/version&amp;gt;</em>
 <a class="jxr_linenumber" name="100" href="#100">100</a> <em class="jxr_javadoccomment"> *             &amp;lt;!-- the m2pluginextras dependency will be required when skipValidationOnImport = false --&amp;gt;</em>
 <a class="jxr_linenumber" name="101" href="#101">101</a> <em class="jxr_javadoccomment"> *             &amp;lt;dependencies&amp;gt;</em>
 <a class="jxr_linenumber" name="102" href="#102">102</a> <em class="jxr_javadoccomment"> *                 &amp;lt;dependency&amp;gt;</em>
@@ -198,7 +198,7 @@
 <a class="jxr_linenumber" name="188" href="#188">188</a> <em class="jxr_javadoccomment">     * JavaScript in the same way that the Isomorphic JSP tag library for screen or DS loading would do it.  These</em>
 <a class="jxr_linenumber" name="189" href="#189">189</a> <em class="jxr_javadoccomment">     * resources have .ui.js and .ds.js extensions respectively.</em>
 <a class="jxr_linenumber" name="190" href="#190">190</a> <em class="jxr_javadoccomment">     *</em>
-<a class="jxr_linenumber" name="191" href="#191">191</a> <em class="jxr_javadoccomment">     * @since 1.4.4</em>
+<a class="jxr_linenumber" name="191" href="#191">191</a> <em class="jxr_javadoccomment">     * @since 1.4.5</em>
 <a class="jxr_linenumber" name="192" href="#192">192</a> <em class="jxr_javadoccomment">     */</em>
 <a class="jxr_linenumber" name="193" href="#193">193</a>     @Parameter(property = <span class="jxr_string">"includeJs"</span>, defaultValue = <span class="jxr_string">"false"</span>)
 <a class="jxr_linenumber" name="194" href="#194">194</a>     <strong class="jxr_keyword">protected</strong> <strong class="jxr_keyword">boolean</strong> includeJs;
@@ -570,7 +570,7 @@
 <a class="jxr_linenumber" name="560" href="#560">560</a> 
 <a class="jxr_linenumber" name="561" href="#561">561</a>         getLog().info(<span class="jxr_string">"Contacting server for Reify project metadata..."</span>);
 <a class="jxr_linenumber" name="562" href="#562">562</a>         
-<a class="jxr_linenumber" name="563" href="#563">563</a>         HttpGet request = <strong class="jxr_keyword">new</strong> HttpGet(<span class="jxr_string">"/isomorphic/RESTHandler/hostedProjects?fileName="</span> + URLEncoder.encode(projectName) + <span class="jxr_string">"&amp;isc_dataFormat=xml"</span>);
+<a class="jxr_linenumber" name="563" href="#563">563</a>         HttpGet request = <strong class="jxr_keyword">new</strong> HttpGet(<span class="jxr_string">"/isomorphic/RESTHandler/isc_hostedProjects?fileName="</span> + URLEncoder.encode(projectName) + <span class="jxr_string">"&amp;isc_dataFormat=xml"</span>);
 <a class="jxr_linenumber" name="564" href="#564">564</a>         HttpResponse response = httpWorker.execute(request);
 <a class="jxr_linenumber" name="565" href="#565">565</a> 
 <a class="jxr_linenumber" name="566" href="#566">566</a>         String body = <strong class="jxr_keyword">null</strong>;
