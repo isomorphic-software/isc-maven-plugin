@@ -12,6 +12,7 @@
                     <mockDatasourcesDir>${mockDatasourcesDir}</mockDatasourcesDir>
                     <includeTestData xsi:type="xsd:boolean">false</includeTestData>
                     <uiDir>${uiDir}</uiDir>
+                    <includeJS xsi:type="xsd:boolean">${includeJs?c}</includeJS>
                     <includeJSP xsi:type="xsd:boolean">${includeTestJsp?c}</includeJSP>
                     <jspFilePath xsi:type="xsd:Object">
                         <path>${testJspPathname}</path>

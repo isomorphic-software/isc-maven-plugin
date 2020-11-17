@@ -96,7 +96,7 @@ import net.htmlparser.jericho.Source;
  *         &lt;plugin&gt;
  *             &lt;groupId&gt;com.isomorphic&lt;/groupId&gt;
  *             &lt;artifactId&gt;isc-maven-plugin&lt;/artifactId&gt;
- *             &lt;version&gt;1.4.0-SNAPSHOT&lt;/version&gt;
+ *             &lt;version&gt;1.4.5&lt;/version&gt;
  *             &lt;!-- the m2pluginextras dependency will be required when skipValidationOnImport = false --&gt;
  *             &lt;dependencies&gt;
  *                 &lt;dependency&gt;
@@ -182,6 +182,16 @@ public class ImportMojo extends AbstractBaseMojo {
      */
     @Parameter(property = "smartclientRuntimeDir", defaultValue="${project.build.directory}/${project.build.finalName}/isomorphic")
     protected File smartclientRuntimeDir;
+
+    /**
+     * If true, the import process will *add* JavaScript versions of screens and MockDataSources, translated to
+     * JavaScript in the same way that the Isomorphic JSP tag library for screen or DS loading would do it.  These
+     * resources have .ui.js and .ds.js extensions respectively.
+     *
+     * @since 1.4.5
+     */
+    @Parameter(property = "includeJs", defaultValue = "false")
+    protected boolean includeJs;
 
     /**
      * If true, the import process will create a JSP launcher that loads the given project/s.
@@ -502,7 +512,8 @@ public class ImportMojo extends AbstractBaseMojo {
         String msg = "File '%s' appears to have been modified since the last import.  Aborting to provide an opprtunity to investigate.  \n" +
                 "You can either revert your changes, delete the file, or remove its checksum from the project file to continue. \n" +
                 "You can also disable the check for this and all other files using the skipOverwriteProtection parameter.";
-        
+
+        //TODO Also check for changes to any .ui.js / ds.js files
         List<Node> screens = getScreenNodes(document);
         for (Node screen : screens) {
             String expected = screen.valueOf("checksum");
@@ -549,7 +560,7 @@ public class ImportMojo extends AbstractBaseMojo {
 
         getLog().info("Contacting server for Reify project metadata...");
         
-        HttpGet request = new HttpGet("/isomorphic/RESTHandler/hostedProjects?fileName=" + URLEncoder.encode(projectName) + "&isc_dataFormat=xml");
+        HttpGet request = new HttpGet("/isomorphic/RESTHandler/isc_hostedProjects?fileName=" + URLEncoder.encode(projectName) + "&isc_dataFormat=xml");
         HttpResponse response = httpWorker.execute(request);
 
         String body = null;
@@ -618,6 +629,7 @@ public class ImportMojo extends AbstractBaseMojo {
         context.put("screens", getScreenNames(project));
         context.put("datasources", getDataSourceNames(project));
 
+        context.put("includeJs",  includeJs);
         context.put("includeTestJsp",  includeTestJsp);
         context.put("testJspPathname", testJspPathname);
         StringWriter jspWriter  = new StringWriter();
@@ -866,6 +878,10 @@ public class ImportMojo extends AbstractBaseMojo {
 
     protected void setSmartclientRuntimeDir(File smartclientRuntimeDir) {
         this.smartclientRuntimeDir = smartclientRuntimeDir;
+    }
+
+    protected void setIncludeJs(boolean includeJs) {
+        this.includeJs = includeJs;
     }
 
     protected void setIncludeTestJsp(boolean includeTestJsp) {
