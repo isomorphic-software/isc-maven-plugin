@@ -425,14 +425,14 @@ public final class Distribution {
 		 */
 		File assembliesDir = new File(to, "assembly");
 	
-		@SuppressWarnings("unchecked")
-		Collection<File> assemblies = CollectionUtils.arrayToList(assembliesDir.listFiles(new FileFilter() {
+		List assemblies = CollectionUtils.arrayToList(assembliesDir.listFiles(new FileFilter() {
 			@Override
 			public boolean accept(File arg0) {
 				return arg0.isDirectory();
 			}
 		}));
-		for (File assembly : assemblies) {
+		for (int i = 0; i < assemblies.size(); i++) {
+			File assembly = (File) assemblies.get(i);
 			String name = FilenameUtils.getBaseName(assembly.getName());
 			LOGGER.debug("Copying resources for assembly '{}'", name);
 			ArchiveUtils.zip(assembly, FileUtils.getFile(assembliesDir, name + ".zip"));
