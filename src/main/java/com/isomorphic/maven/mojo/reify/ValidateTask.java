@@ -1,10 +1,9 @@
 package com.isomorphic.maven.mojo.reify;
 
-import java.io.File;
-
+import com.isomorphic.maven.util.AntProjectLogger;
 import org.apache.tools.ant.BuildException;
 
-import com.isomorphic.maven.util.AntProjectLogger;
+import java.io.File;
 
 /**
  * An Ant task allowing the Reify {@link ValidateMojo} to be run from Ant builds.  Note that
@@ -15,24 +14,24 @@ import com.isomorphic.maven.util.AntProjectLogger;
  */
 public class ValidateTask extends ImportTask {
 
-	@Override
-	public void execute() throws BuildException {
-		ValidateMojo mojo = new ValidateMojo();
+    @Override
+    public void execute() throws BuildException {
+        ValidateMojo mojo = new ValidateMojo();
 
-		mojo.setLog(new AntProjectLogger(getProject()));
-		
-		mojo.setWebappDir(webappDir != null ? new File(webappDir) : new File(getProject().getBaseDir(), webappDir));
-		mojo.setSmartclientRuntimeDir(smartclientRuntimeDir != null ? new File(smartclientRuntimeDir) : new File(getProject().getBaseDir(), "war/isomorphic"));
-		mojo.setDataSourcesDir(dataSourcesDir);
-		mojo.setMockDataSourcesDir(mockDataSourcesDir);
-		mojo.setValidationFailureThreshold(validationFailureThreshold);
-		
-		try {
-			mojo.execute();
-		} catch (Exception e) {
-			throw new BuildException(e);
-		}
-		
-	}
-	
+        mojo.setLog(new AntProjectLogger(getProject()));
+
+        mojo.setWebappDir(webappDir != null ? new File(webappDir) : new File(getProject().getBaseDir(), webappDir));
+        mojo.setSmartclientRuntimeDir(smartclientRuntimeDir != null ? new File(smartclientRuntimeDir) : new File(getProject().getBaseDir(), "war/isomorphic"));
+        mojo.setDataSourcesDir(dataSourcesDir);
+        mojo.setMockDataSourcesDir(mockDataSourcesDir);
+        mojo.setValidationFailureThreshold(validationFailureThreshold);
+
+        try {
+            mojo.execute();
+        } catch (Exception e) {
+            throw new BuildException(e);
+        }
+
+    }
+
 }

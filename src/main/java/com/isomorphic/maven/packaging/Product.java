@@ -24,34 +24,34 @@ package com.isomorphic.maven.packaging;
  */
 public enum Product {
 
-	SMARTCLIENT("SmartClient"),	
-	SMARTGWT("SmartGWT"),	
-	SMARTGWT_MOBILE("SmartGWT.mobile");
-	
-	private String label;
-	private String name;
-	
-	private Product(String label) {
-		this(label, label);
-	}
-	
-	private Product(String label, String name) {
-		this.label = label;
-		this.name = name.toLowerCase();
-	}
-	
-	@Override
-	public String toString() {
-		return getLabel();
-	}
-	
-	public String getLabel() {
-		return label;
-	}
-	
-	public String getName() {
-		return name;
-	}
-	
+    SMARTCLIENT("SmartClient"),
+    SMARTGWT("SmartGWT"),
+    SMARTGWT_MOBILE("SmartGWT.mobile");
+
+    private String label;
+    private String name;
+
+    Product(String label) {
+        this(label, label);
+    }
+
+    Product(String label, String name) {
+        this.label = label;
+        this.name = name.toLowerCase();
+    }
+
+    @Override
+    public String toString() {
+        return getLabel();
+    }
+
+    public String getLabel() {
+        return label;
+    }
+
+    public String getName() {
+        return name;
+    }
+
 
 }

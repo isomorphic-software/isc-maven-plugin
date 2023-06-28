@@ -15,7 +15,7 @@
     limitations under the License.
 -->
 
-###Usage
+### Usage
 
 Install and Deploy goals are meant to be invoked directly.  That is, executed outside the context of any build lifecycle. 
     
@@ -25,7 +25,7 @@ Though it is possible to configure the plugin in your project's POM, and even to
 
 This just causes a collection of Maven artifacts to be deployed to your own repository, where Maven will be able to resolve dependencies in the usual way at the usual time.  Once deployed, there is no need to run the plugin again until you wish to update to a newer build.
 
-###Configuration
+### Configuration
 
 All the usual Maven configuration mechanisms apply, including the use of system properties (as above) and build profile property values.  Examples will generally be written with the explicit activation of some profile present - assume required parameters and so on are provided there.  
     
@@ -51,7 +51,7 @@ With a few exceptions, artifacts take the same name as a corresponding file in t
     
 Version numbers are changed slightly to include the nightly build date, and again to more closely mirror popular Maven conventions.  e.g., a 4.0p _patch build_ produced by Isomorphic on September 16, 2013 would be versioned with a number like 4.0-p20130916 and a 4.1 _development build_ from the same day would get [by default](./apidocs/com/isomorphic/maven/mojo/AbstractPackagerMojo.html#snapshots) a version number of 4.1-d20130916-SNAPSHOT.
     
-###Putting it all together
+### Putting it all together
 
 1. Execute a plugin goal, optionally providing configuration property values in a build profile.  Maven will install the plugin, and the plugin will install and/or deploy the SDK artifacts.
 

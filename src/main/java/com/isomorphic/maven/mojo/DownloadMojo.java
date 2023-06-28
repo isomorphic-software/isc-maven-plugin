@@ -19,15 +19,14 @@ package com.isomorphic.maven.mojo;
  * under the License.
  */
 
-import java.util.Set;
-
+import com.isomorphic.maven.packaging.Module;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import com.isomorphic.maven.packaging.Module;
+import java.util.Set;
 
 /**
  * Downloads and unpacks a given distribution, but does not actually do anything with the resulting Maven artifacts. 
@@ -35,10 +34,10 @@ import com.isomorphic.maven.packaging.Module;
 @Mojo(name="download", requiresProject=false, requiresDirectInvocation=true)
 public final class DownloadMojo extends AbstractPackagerMojo {
 
-	private static final Logger LOGGER = LoggerFactory.getLogger(DownloadMojo.class);
-		
-	@Override
-	public void doExecute(Set<Module> artifacts)	throws MojoExecutionException, MojoFailureException {
-	}
+    private static final Logger LOGGER = LoggerFactory.getLogger(DownloadMojo.class);
+
+    @Override
+    public void doExecute(Set<Module> artifacts) throws MojoExecutionException, MojoFailureException {
+    }
 
 }

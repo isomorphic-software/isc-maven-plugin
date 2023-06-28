@@ -19,17 +19,17 @@ package com.isomorphic.maven.packaging;
  * under the License.
  */
 
-import java.io.File;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-
 import org.apache.commons.io.FilenameUtils;
 import org.apache.maven.model.Model;
 import org.eclipse.aether.artifact.AbstractArtifact;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.util.artifact.SubArtifact;
+
+import java.io.File;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.Map;
+import java.util.Set;
 
 
 /**
@@ -37,136 +37,136 @@ import org.eclipse.aether.util.artifact.SubArtifact;
  */
 public class Module extends AbstractArtifact implements Comparable<Module> {
 
-	String groupId = "";
-	String artifactId = "";
-	String version = "";
-	String classifier = "";
-	String extension = "";
+    String groupId = "";
+    String artifactId = "";
+    String version = "";
+    String classifier = "";
+    String extension = "";
 
-	File file;
-	
-	Map<String, String> propertiesMap = new HashMap<String, String>(0);
-	
-	Set<Artifact> subs = new HashSet<Artifact>();
-	
-	public Module(Model model) {
-		this(model, model.getPomFile());
-	}
-	
-	public Module(Model model, File file) {
-		this.file = file;
-		artifactId = model.getArtifactId();
-		groupId = model.getGroupId();
-		version = model.getVersion();
-		
-		extension = model.getPackaging().toLowerCase();
-		if ("maven-archetype".equals(extension)) {
-			extension = "jar";
-		}
+    File file;
 
-		if (! extension.equals("pom") && model.getPomFile() != null) {
-			attach(model.getPomFile(), null);
-		}
-	}
+    Map<String, String> propertiesMap = new HashMap<String, String>(0);
 
-	public Boolean isPom() {
-		return extension.equalsIgnoreCase("pom");
-	}
-	
-	/**
-	 * Convenience method for attaching {@link SubArtifact SubArtifacts} to this Artifact.
-	 * @param file The file for this artifact, may be {@code null} if none.
+    Set<Artifact> subs = new HashSet<Artifact>();
+
+    public Module(Model model) {
+        this(model, model.getPomFile());
+    }
+
+    public Module(Model model, File file) {
+        this.file = file;
+        artifactId = model.getArtifactId();
+        groupId = model.getGroupId();
+        version = model.getVersion();
+
+        extension = model.getPackaging().toLowerCase();
+        if ("maven-archetype".equals(extension)) {
+            extension = "jar";
+        }
+
+        if (! extension.equals("pom") && model.getPomFile() != null) {
+            attach(model.getPomFile(), null);
+        }
+    }
+
+    public Boolean isPom() {
+        return extension.equalsIgnoreCase("pom");
+    }
+
+    /**
+     * Convenience method for attaching {@link SubArtifact SubArtifacts} to this Artifact.
+     * @param file The file for this artifact, may be {@code null} if none.
      * @param classifier The classifier for this artifact, may be {@code null} if none.
-	 */
-	public void attach(File file, String classifier) {
-		subs.add(new SubArtifact(this, classifier, FilenameUtils.getExtension(file.getName()), file));
-	}
+     */
+    public void attach(File file, String classifier) {
+        subs.add(new SubArtifact(this, classifier, FilenameUtils.getExtension(file.getName()), file));
+    }
 
-	public Artifact[] getAttachments() {
-		return subs.toArray(new Artifact[0]);
-	}
-	
-	public String getGroupId() {
-		return groupId;
-	}
+    public Artifact[] getAttachments() {
+        return subs.toArray(new Artifact[0]);
+    }
 
-	public void setGroupId(String groupId) {
-		this.groupId = groupId;
-	}
+    public String getGroupId() {
+        return groupId;
+    }
 
-	public String getVersion() {
-		return version;
-	}
+    public void setGroupId(String groupId) {
+        this.groupId = groupId;
+    }
 
-	public Artifact setVersion(String version) {
-		this.version = version;
-		return this;
-	}
+    public String getVersion() {
+        return version;
+    }
 
-	public String getClassifier() {
-		return classifier;
-	}
+    public Artifact setVersion(String version) {
+        this.version = version;
+        return this;
+    }
 
-	public void setClassifier(String classifier) {
-		this.classifier = classifier;
-	}
+    public String getClassifier() {
+        return classifier;
+    }
 
-	public String getExtension() {
-		return extension;
-	}
+    public void setClassifier(String classifier) {
+        this.classifier = classifier;
+    }
 
-	public void setExtension(String extension) {
-		this.extension = extension;
-	}
+    public String getExtension() {
+        return extension;
+    }
 
-	public File getFile() {
-		return file;
-	}
-	
-	public Artifact setFile(File file) {
-		this.file = file;
-		return this;
-	}
+    public void setExtension(String extension) {
+        this.extension = extension;
+    }
 
-	public String getArtifactId() {
-		return artifactId;
-	}
+    public File getFile() {
+        return file;
+    }
 
-	@Override
-	public String getProperty(String key, String defaultValue) {
-		return propertiesMap.containsKey(key) ? propertiesMap.get(key) : defaultValue;
-	}
+    public Artifact setFile(File file) {
+        this.file = file;
+        return this;
+    }
 
-	@Override
-	public Map<String, String> getProperties() {
-		return propertiesMap;
-	}
-	
-	@Override
-	public Artifact setProperties(Map<String, String> properties) {
-		propertiesMap = properties;
-		return this;
-	}
+    public String getArtifactId() {
+        return artifactId;
+    }
+
+    @Override
+    public String getProperty(String key, String defaultValue) {
+        return propertiesMap.getOrDefault(key, defaultValue);
+    }
+
+    @Override
+    public Map<String, String> getProperties() {
+        return propertiesMap;
+    }
+
+    @Override
+    public Artifact setProperties(Map<String, String> properties) {
+        propertiesMap = properties;
+        return this;
+    }
 
     @Override
     public int hashCode() {
-    	return toString().hashCode();
+        return toString().hashCode();
     }
     
     @Override
-	public boolean equals(Object that) {
-		if (that == this) {
-			return true;
-		} else if (!(that instanceof Module)) {
-			return false;
-		}
+    public boolean equals(Object that) {
+        if (that == this) {
+            return true;
+        } else if (!(that instanceof Module)) {
+            return false;
+        }
 
-		return this.toString().equals(that.toString());
-	}
+        return this.toString().equals(that.toString());
+    }
 
-	@Override
-	public int compareTo(Module o) {
-		return toString().compareTo(o.toString());
-	}	
-	
+    @Override
+    public int compareTo(Module o) {
+        return toString().compareTo(o.toString());
+    }
+
 }

@@ -23,61 +23,62 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import com.isomorphic.maven.util.ArchiveUtils;
+import org.springframework.util.AntPathMatcher;
 
 
 public class UnpackRelocationTest {
 
-	@Test
-	public void dropRoot() {
-		String entry = "smartgwtee-4.1d/lib/smartgwt.jar";
-		String target = "target";
-		
-		String rewritten = ArchiveUtils.rewritePath(entry, target);
-		
-		Assert.assertEquals("target/smartgwt.jar", rewritten);
-	}
+    @Test
+    public void dropRoot() {
+        String entry = "smartgwtee-4.1d/lib/smartgwt.jar";
+        String target = "target";
 
-	@Test
-	public void dropRootAndRename() {
-		String entry = "SmartClient_SNAPSHOT_v91d_2013-11-20/smartclientSDK/WEB-INF/lib/isomorphic_realtime_messaging.jar";
-		String target = "target/isomorphic_messaging.jar";
+        String rewritten = ArchiveUtils.rewritePath(entry, target);
 
-		String rewritten = ArchiveUtils.rewritePath(entry, target);
-		
-		Assert.assertEquals("target/isomorphic_messaging.jar", rewritten);
-	}
-	
-	@Test
-	public void changeRoot() {
+        Assert.assertEquals("target/smartgwt.jar", rewritten);
+    }
 
-		String entry = "smartgwtee-4.1d/doc/javadoc/com/isc/servlet/Foo.html";
-		String target = "doc/api/#javadoc";
-		
-		String rewritten = ArchiveUtils.rewritePath(entry, target);
-		
-		Assert.assertEquals("doc/api/com/isc/servlet/Foo.html", rewritten);
-	}
-	
-	@Test
-	public void sigh() {
+    @Test
+    public void dropRootAndRename() {
+        String entry = "SmartClient_SNAPSHOT_v91d_2013-11-20/smartclientSDK/WEB-INF/lib/isomorphic_realtime_messaging.jar";
+        String target = "target/isomorphic_messaging.jar";
 
-		String entry = "smartgwtee-4.1d/doc/javadoc/com/isomorphic/servlet/CompressionFilter.html";
-		String target = "doc/api/#javadoc/network";
-		
-		String rewritten = ArchiveUtils.rewritePath(entry, target);
-		
-		Assert.assertEquals("doc/api/com/isomorphic/servlet/network/CompressionFilter.html", rewritten);
-	}
-	
-	@Test
-	public void changeRootAndAddDirectoryAndRename() {
-		String entry = "smartgwtee-4.1d/lib/smartgwtee.jar";
-		String target = "foo/bar/#lib/baz/smartgwt-eval.jar";
-		
-		String rewritten = ArchiveUtils.rewritePath(entry, target);
-		
-		Assert.assertEquals("foo/bar/baz/smartgwt-eval.jar", rewritten);
-	}
-	
+        String rewritten = ArchiveUtils.rewritePath(entry, target);
+
+        Assert.assertEquals("target/isomorphic_messaging.jar", rewritten);
+    }
+
+    @Test
+    public void changeRoot() {
+
+        String entry = "smartgwtee-4.1d/doc/javadoc/com/isc/servlet/Foo.html";
+        String target = "doc/api/#javadoc";
+
+        String rewritten = ArchiveUtils.rewritePath(entry, target);
+
+        Assert.assertEquals("doc/api/com/isc/servlet/Foo.html", rewritten);
+    }
+
+    @Test
+    public void sigh() {
+
+        String entry = "smartgwtee-4.1d/doc/javadoc/com/isomorphic/servlet/CompressionFilter.html";
+        String target = "doc/api/#javadoc/network";
+
+        String rewritten = ArchiveUtils.rewritePath(entry, target);
+
+        Assert.assertEquals("doc/api/com/isomorphic/servlet/network/CompressionFilter.html", rewritten);
+    }
+
+    @Test
+    public void changeRootAndAddDirectoryAndRename() {
+        String entry = "smartgwtee-4.1d/lib/smartgwtee.jar";
+        String target = "foo/bar/#lib/baz/smartgwt-eval.jar";
+
+        String rewritten = ArchiveUtils.rewritePath(entry, target);
+
+        Assert.assertEquals("foo/bar/baz/smartgwt-eval.jar", rewritten);
+    }
+
 
 }

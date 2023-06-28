@@ -17,8 +17,8 @@ import org.apache.maven.plugins.annotations.Mojo;
 @Mojo(name="reify-validate", requiresProject=false)
 public class ValidateMojo extends ImportMojo {
 
-	@Override
-	public void execute() throws MojoExecutionException, MojoFailureException {
-		super.validate();
-	}
+    @Override
+    public void execute() throws MojoExecutionException, MojoFailureException {
+        super.validate();
+    }
 }	

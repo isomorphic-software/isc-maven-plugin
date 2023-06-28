@@ -1,23 +1,22 @@
 package com.isomorphic.maven.mojo.reify;
 
-import static com.isomorphic.util.ErrorMessage.Severity.ERROR;
-import static com.isomorphic.util.ErrorMessage.Severity.INFO;
-import static com.isomorphic.util.ErrorMessage.Severity.WARN;
-
-import java.io.File;
-import java.io.FileOutputStream;
-import java.io.FileWriter;
-import java.io.OutputStream;
-import java.io.StringWriter;
-import java.net.URI;
-import java.net.URLEncoder;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.LinkedHashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-
+import com.google.common.collect.ImmutableMap;
+import com.google.common.collect.Sets;
+import com.google.common.hash.Hashing;
+import com.google.common.io.Files;
+import com.isomorphic.maven.mojo.AbstractBaseMojo;
+import com.isomorphic.maven.util.ArchiveUtils;
+import com.isomorphic.maven.util.HttpRequestManager;
+import com.isomorphic.maven.util.LoggingCountingOutputStream;
+import com.isomorphic.tools.ReifyDataSourceValidator;
+import com.isomorphic.util.ErrorMessage;
+import com.isomorphic.util.ErrorMessage.Severity;
+import com.isomorphic.util.ErrorReport;
+import freemarker.cache.ClassTemplateLoader;
+import freemarker.template.Configuration;
+import freemarker.template.TemplateExceptionHandler;
+import net.htmlparser.jericho.OutputDocument;
+import net.htmlparser.jericho.Source;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.IOUtils;
@@ -38,33 +37,17 @@ import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.settings.Proxy;
-import org.dom4j.Document;
-import org.dom4j.DocumentHelper;
-import org.dom4j.Element;
-import org.dom4j.Node;
-import org.dom4j.XPath;
+import org.dom4j.*;
 import org.dom4j.io.OutputFormat;
 import org.dom4j.io.SAXReader;
 import org.dom4j.io.XMLWriter;
 
-import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.Sets;
-import com.google.common.hash.Hashing;
-import com.google.common.io.Files;
-import com.isomorphic.maven.mojo.AbstractBaseMojo;
-import com.isomorphic.maven.util.ArchiveUtils;
-import com.isomorphic.maven.util.HttpRequestManager;
-import com.isomorphic.maven.util.LoggingCountingOutputStream;
-import com.isomorphic.tools.ReifyDataSourceValidator;
-import com.isomorphic.util.ErrorMessage;
-import com.isomorphic.util.ErrorMessage.Severity;
-import com.isomorphic.util.ErrorReport;
+import java.io.*;
+import java.net.URI;
+import java.net.URLEncoder;
+import java.util.*;
 
-import freemarker.cache.ClassTemplateLoader;
-import freemarker.template.Configuration;
-import freemarker.template.TemplateExceptionHandler;
-import net.htmlparser.jericho.OutputDocument;
-import net.htmlparser.jericho.Source;
+import static com.isomorphic.util.ErrorMessage.Severity.*;
 
 /**
  * Provides for single-step download and extraction of assets hosted on the Reify platform.
@@ -132,7 +115,7 @@ public class ImportMojo extends AbstractBaseMojo {
     /**
      * The full URL of the Reify site hosting your project/s.  Useful when running your own
      * <a href="https://www.smartclient.com/smartclient-latest/isomorphic/system/reference/?id=group..reifyOnSite">Reify OnSite</a>
-     * instance, at e.g., 'http://localhost:8080/create/'.
+     * instance, at e.g., '<a href="http://localhost:8080/create/"></a>'.
      *
      * @since 1.4.2
      */
@@ -171,7 +154,7 @@ public class ImportMojo extends AbstractBaseMojo {
      * the path created by a typical mvn war:exploded invocation.  Alternatively, set this to
      * the path created by mvn jetty:run, or any other path where an appropriate SmartClient
      * runtime may be found.
-     *
+     * <p>
      * Note that SmartGWT users may need to change the value to something like:
      * <p>
      * <code>
@@ -340,7 +323,7 @@ public class ImportMojo extends AbstractBaseMojo {
     private boolean skipOverwriteProtection;
 
     private UsernamePasswordCredentials credentials;
-    private Configuration freemarkerConfig;
+    private final Configuration freemarkerConfig;
     private Proxy proxy;
 
     private HttpHost host;
@@ -401,6 +384,7 @@ public class ImportMojo extends AbstractBaseMojo {
 
             getLog().info(String.format("Importing Reify project assets from download at '%s'...", archive.getCanonicalPath()));
             File unpacked = new File(workdir, projectName);
+
             ArchiveUtils.unzip(archive, unpacked);
 
             // update the new project file with checksums of file content for overwrite protection on future imports
@@ -451,7 +435,7 @@ public class ImportMojo extends AbstractBaseMojo {
 
                         for (ErrorMessage msg : errors) {
 
-                            String output = null;
+                            String output;
                             if (key.equals(report.getDataSourceId())) {
                                 output = String.format("%s: %s", report.getDataSourceId(), msg.getErrorString());
                             } else {
@@ -591,13 +575,13 @@ public class ImportMojo extends AbstractBaseMojo {
     private String getIsomorphicDirPath(String relativeToPath) {
 
         String[] parentDirectories = relativeToPath.split("/");
-        int parentDirectoryCount = parentDirectories == null ? 0 : parentDirectories.length;
-        String prefix = "";
+        int parentDirectoryCount = parentDirectories.length;
+        StringBuilder prefix = new StringBuilder();
         for (int i=1; i < parentDirectoryCount; i++) {
-            prefix = "../" + prefix;
+            prefix.insert(0, "../");
         }
 
-        String name = null;
+        String name;
         // e.g., myapplication/sc vs isomorphic
         if (isSmartGWTBuild()) {
             name = smartclientRuntimeDir.getParentFile().getName() + "/" + smartclientRuntimeDir.getName();
@@ -617,7 +601,7 @@ public class ImportMojo extends AbstractBaseMojo {
      */
     private File downloadProjectArchive(Document project) throws Exception {
         
-        Map<String, Object> context = new HashMap<String, Object>();
+        Map<String, Object> context = new HashMap<>();
         context.put("projectName", projectName);
         context.put("datasourcesDir", dataSourcesDir);
         context.put("mockDatasourcesDir", mockDataSourcesDir);
@@ -647,7 +631,7 @@ public class ImportMojo extends AbstractBaseMojo {
         StringWriter messageWriter = new StringWriter();
         freemarkerConfig.getTemplate("ProjectExportRequestParameter.ftl").process(context, messageWriter);
 
-        List<NameValuePair> params = new ArrayList<NameValuePair>();
+        List<NameValuePair> params = new ArrayList<>();
         params.add(new BasicNameValuePair("_transaction", messageWriter.toString()));
 
         HttpPost request = new HttpPost("/isomorphic/IDACall?isc_rpc=1");
@@ -686,7 +670,7 @@ public class ImportMojo extends AbstractBaseMojo {
      *
      * @param project metadata used to provide the names of requested assets
      * @param parent the parent directory
-     * @throws Exception whenany error occurs
+     * @throws Exception when any error occurs
      */
     private void writeProjectFile(Document project, File parent) throws Exception {
 
@@ -725,7 +709,7 @@ public class ImportMojo extends AbstractBaseMojo {
             throw new RuntimeException(msg);
         }
 
-        List<File> welcomeFiles = new ArrayList<File>();
+        List<File> welcomeFiles = new ArrayList<>();
 
         SAXReader reader = new SAXReader();
         Document webXml = reader.read(welcomeFilesConfig);
@@ -737,7 +721,7 @@ public class ImportMojo extends AbstractBaseMojo {
             String val = node.getStringValue();
             File file = FileUtils.getFile(webappDir, val);
             if (! file.exists()) {
-                getLog().warn(String.format("Welcome file '{}' not found.  Skipping.", val));
+                getLog().warn(String.format("Welcome file '%s' not found.  Skipping.", val));
                 continue;
             }
             welcomeFiles.add(file);
@@ -763,7 +747,7 @@ public class ImportMojo extends AbstractBaseMojo {
             net.htmlparser.jericho.Element scriptElement =
                     source.getElementById("isc-maven-plugin.reify-import.modifyWelcomeFiles");
 
-            Set<String> projectNames = new LinkedHashSet<String>();
+            Set<String> projectNames = new LinkedHashSet<>();
             if (scriptElement != null) {
                 if ("jsp".equals(extension)) {
 
@@ -819,7 +803,7 @@ public class ImportMojo extends AbstractBaseMojo {
     }
     private List<String> getScreenNames(Document project) {
         List<Node> nodes = getScreenNodes(project);
-        List<String> names = new ArrayList<String>();
+        List<String> names = new ArrayList<>();
         for (Node node : nodes) {
             names.add(getScreenName(node));
         }
@@ -840,7 +824,7 @@ public class ImportMojo extends AbstractBaseMojo {
     }
     private List<String> getDataSourceNames(Document project) {
         List<Node> nodes = getDataSourceNodes(project);
-        List<String> names = new ArrayList<String>();
+        List<String> names = new ArrayList<>();
         for (Node node : nodes) {
             names.add(getDataSourceName(node));
         }

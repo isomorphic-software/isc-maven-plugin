@@ -15,7 +15,7 @@
    limitations under the License.
 -->
 
-###Install From Local Distribution
+### Install From Local Distribution
 
 Nightly builds are not necessarily available indefinitely, and you may find from time to time that you need to use a version that has been superseded by a newer release or is otherwise no longer found on the [builds page](http://www.smartclient.com/builds/).  In this case, the plugin can be made to look locally for a distribution: 
     

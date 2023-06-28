@@ -19,8 +19,7 @@ package com.isomorphic.maven.mojo;
  * under the License.
  */
 
-import java.util.Set;
-
+import com.isomorphic.maven.packaging.Module;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Mojo;
@@ -28,39 +27,39 @@ import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.installation.InstallRequest;
 import org.eclipse.aether.installation.InstallationException;
 
-import com.isomorphic.maven.packaging.Module;
+import java.util.Set;
 
 /**
  * Installs a collection of {@link Module}s to the user's local repository. 
  * Functionally, pretty much just like the Install Plugin's install-file goal, except this one works on a collection.
  * <p> 
- * Refer to http://maven.apache.org/plugins/maven-install-plugin/install-file-mojo.html
+ * Refer to <a href="http://maven.apache.org/plugins/maven-install-plugin/install-file-mojo.html"></a>
  */
 @Mojo(name="install", requiresProject=false)
 public final class InstallMojo extends AbstractPackagerMojo {
-	
-	/**
-	 * Install each of the provided {@link Module}s, along with their SubArtifacts (POMs, JavaDoc bundle, etc.), to a local repository.
-	 */
-	@Override 
-	public void doExecute(Set<Module> artifacts) throws MojoExecutionException, MojoFailureException {
-	
-		for (Module artifact : artifacts) {
-	     
-			InstallRequest installRequest = new InstallRequest();
-	        installRequest.addArtifact(artifact);
-	        
-	        for (Artifact subArtifact : artifact.getAttachments()) {
-	        	installRequest.addArtifact(subArtifact);
-	        }
 
-	        try {
-				repositorySystem.install(repositorySystemSession, installRequest );
-			} catch (InstallationException e) {
-				throw new MojoFailureException("Installation failed: ", e);
-			}			
-		}
-		
-	}
-	
+    /**
+     * Install each of the provided {@link Module}s, along with their SubArtifacts (POMs, JavaDoc bundle, etc.), to a local repository.
+     */
+    @Override
+    public void doExecute(Set<Module> artifacts) throws MojoExecutionException, MojoFailureException {
+
+        for (Module artifact : artifacts) {
+
+            InstallRequest installRequest = new InstallRequest();
+            installRequest.addArtifact(artifact);
+
+            for (Artifact subArtifact : artifact.getAttachments()) {
+                installRequest.addArtifact(subArtifact);
+            }
+
+            try {
+                repositorySystem.install(repositorySystemSession, installRequest );
+            } catch (InstallationException e) {
+                throw new MojoFailureException("Installation failed: ", e);
+            }
+        }
+
+    }
+
 }

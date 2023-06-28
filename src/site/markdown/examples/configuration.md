@@ -15,7 +15,7 @@
    limitations under the License.
 -->
 
-###Configuration / Settings
+### Configuration / Settings
                                                                             
 Most users will need to add some or all of the following entries to their [Maven settings](http://maven.apache.org/ref/3.1.1/maven-settings/settings.html).
 

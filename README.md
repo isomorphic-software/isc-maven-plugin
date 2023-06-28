@@ -16,7 +16,7 @@
 -->
 
 
-#Overview
+# Overview
 
 Prior to SmartGWT version 4.1 / SmartClient version 10.1, Isomorphic Software provided a [Maven repository](http://www.smartclient.com/maven2/) containing SmartGWT artifacts released under the LGPL license. [Licensed editions](http://www.smartclient.com/product/editions.jsp) containing the powerful [server framework](http://smartclient.com/product/whyupgrade.jsp) were never published on any public repository, instead requiring that they be installed / deployed locally. Since SmartGWT version 4.0p / SmartClient 9.0p, POMs have been distributed with the official SDK for this purpose.
 
@@ -31,7 +31,7 @@ This plugin, based on work done previously in a user-contributed [google code pl
 * Translation from traditional Isomorphic conventions to Maven standards for naming, versioning, etc.
 
 * Creation and installation of [supplemental resource assemblies & overlays](http://github.smartclient.com/isc-maven-plugin/artifacts.html)
-	
+
 * Installation of each resulting SmartClient/SmartGWT artifact into your local repository, complete with javadoc attachments where applicable
 
 * Deployment of each resulting SmartClient/SmartGWT artifact into your own repository manager, complete with javadoc attachments where applicable

@@ -25,38 +25,38 @@ package com.isomorphic.maven.packaging;
  * Refer to http://www.smartclient.com/product/editions.jsp
  */
 public enum License {
-	
-	LGPL("LGPL"),
-	EVAL("Eval"),
-	PRO("Pro"),
-	POWER("PowerEdition", "power"),
-	ENTERPRISE("Enterprise"),
-	
-	ANALYTICS_MODULE("AnalyticsModule", "analytics"),
-	MESSAGING_MODULE("RealtimeMessagingModule", "messaging");
 
-	String label;
-	String name;
-	
-	private License(String label) {
-		this(label, label);
-	}
-	
-	private License(String label, String name) {
-		this.label = label;
-		this.name = name.toLowerCase();
-	}
+    LGPL("LGPL"),
+    EVAL("Eval"),
+    PRO("Pro"),
+    POWER("PowerEdition", "power"),
+    ENTERPRISE("Enterprise"),
 
-	@Override
-	public String toString() {
-		return getLabel();
-	}
-	
-	public String getLabel() {
-		return label;
-	}
-	
-	public String getName() {
-		return name;
-	}
+    ANALYTICS_MODULE("AnalyticsModule", "analytics"),
+    MESSAGING_MODULE("RealtimeMessagingModule", "messaging");
+
+    String label;
+    String name;
+
+    private License(String label) {
+        this(label, label);
+    }
+
+    private License(String label, String name) {
+        this.label = label;
+        this.name = name.toLowerCase();
+    }
+
+    @Override
+    public String toString() {
+        return getLabel();
+    }
+
+    public String getLabel() {
+        return label;
+    }
+
+    public String getName() {
+        return name;
+    }
 }

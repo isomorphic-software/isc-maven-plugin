@@ -21,7 +21,7 @@ The dependencies you'll need in your own project will vary depending on what you
 
 POMs like those below are suitable for building the SmartGWT "BuiltInDS" and corresponding SmartClient "Component Data Binding" samples included with the SDK (assuming you have source and resources in standard locations).
 
-###SmartGWT
+### SmartGWT
 
     <?xml version="1.0" encoding="UTF-8"?>
         <project xmlns="http://maven.apache.org/POM/4.0.0"   
@@ -105,7 +105,7 @@ POMs like those below are suitable for building the SmartGWT "BuiltInDS" and cor
         </build>
     </project>
 
-###SmartClient
+### SmartClient
     
     <project xmlns="http://maven.apache.org/POM/4.0.0" 
              xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
