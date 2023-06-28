@@ -19,24 +19,13 @@ package com.isomorphic.maven.mojo;
  * under the License.
  */
 
-import static com.isomorphic.maven.packaging.License.ANALYTICS_MODULE;
-import static com.isomorphic.maven.packaging.License.ENTERPRISE;
-import static com.isomorphic.maven.packaging.License.MESSAGING_MODULE;
-import static com.isomorphic.maven.packaging.License.POWER;
-
-import java.io.File;
-import java.io.IOException;
-import java.text.ParseException;
-import java.text.SimpleDateFormat;
-import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
-import java.util.List;
-import java.util.Set;
-import java.util.TreeSet;
-
+import com.google.common.base.Splitter;
+import com.isomorphic.maven.packaging.Module;
+import com.isomorphic.maven.packaging.*;
+import com.isomorphic.maven.util.HttpRequestManager;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.commons.io.IOCase;
 import org.apache.commons.io.filefilter.FileFilterUtils;
 import org.apache.commons.io.filefilter.IOFileFilter;
 import org.apache.commons.io.filefilter.TrueFileFilter;
@@ -56,13 +45,17 @@ import org.apache.maven.project.ProjectBuildingRequest.RepositoryMerging;
 import org.apache.maven.project.ProjectModelResolver;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.springframework.util.FileSystemUtils;
 
-import com.isomorphic.maven.packaging.Distribution;
-import com.isomorphic.maven.packaging.Downloads;
-import com.isomorphic.maven.packaging.License;
-import com.isomorphic.maven.packaging.Module;
-import com.isomorphic.maven.packaging.Product;
-import com.isomorphic.maven.util.HttpRequestManager;
+import java.io.File;
+import java.io.IOException;
+import java.net.URI;
+import java.nio.file.*;
+import java.text.ParseException;
+import java.text.SimpleDateFormat;
+import java.util.*;
+
+import static com.isomorphic.maven.packaging.License.*;
 
 /**
  * A base class meant to deal with prerequisites to install / deploy goals,
@@ -77,15 +70,15 @@ public abstract class AbstractPackagerMojo extends AbstractBaseMojo {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(AbstractPackagerMojo.class);
 
-	private static final HttpHost HOST = new HttpHost("www.smartclient.com", -1, "https");
-    
-	private HttpRequestManager httpWorker;
-	
+    private static final HttpHost HOST = new HttpHost("www.smartclient.com", -1, "https");
+
+    private HttpRequestManager httpWorker;
+
     /**
      * If true, the optional analytics module (bundled and distributed
      * separately) has been licensed and should be downloaded with the
      * distribution specified by {@link #license}.
-     * 
+     *
      * @since 1.0.0
      */
     @Parameter(property = "includeAnalytics", defaultValue = "false")
@@ -96,13 +89,14 @@ public abstract class AbstractPackagerMojo extends AbstractBaseMojo {
      * href
      * ="http://www.smartclient.com/builds/">http://www.smartclient.com/builds
      * /</a>, in yyyy-MM-dd format. e.g., 2013-25-12. Used to determine both
-     * remote and local file locations. 
+     * remote and local file locations.
      * <br>
-     * Note that if no value is provided, an attempt is made to discover the date of the
-     * latest distribution currently published to the Isomorphic build server.
+     * Note that if no value is provided, and {@link #skipDownload} is not true, an attempt is
+     * made to discover the date of the latest distribution currently published to the
+     * Isomorphic build server.
      * <br>
-     * <b>Default value is</b>: <code>The date of the most recent distribution</code>.
-     * 
+     * <b>Default value is</b>: <code>The date of the most recent distribution (with caveats)</code>.
+     *
      * @since 1.0.0
      */
     @Parameter(property = "buildDate")
@@ -111,7 +105,7 @@ public abstract class AbstractPackagerMojo extends AbstractBaseMojo {
     /**
      * The Isomorphic version number of the specified {@link #product}. e.g.,
      * 9.1d, 4.0p. Used to determine both remote and local file locations.
-     * 
+     *
      * @since 1.0.0
      */
     @Parameter(property = "buildNumber", required = true)
@@ -123,17 +117,28 @@ public abstract class AbstractPackagerMojo extends AbstractBaseMojo {
      * generally prefer the {@link #includeAnalytics} /
      * {@link #includeMessaging} properties, respectively, to cause the optional
      * modules to be included with the base installation / deployment.
-     * 
+     *
      * @since 1.0.0
      */
     @Parameter(property = "license", required = true)
     protected License license;
 
     /**
+     * Limits the skins installed with the runtime to the names in this comma-separated list.
+     * E.g., <code>-Dskins=Tahoe,Stratus</code> will remove all skins except Tahoe and Stratus.
+     * Note that these deleted resources cannot be recovered except by reinstalling the artifact(s) to
+     * your repository.
+     *
+     * @since 1.4.6
+     */
+    @Parameter(property = "skins")
+    protected String skins;
+
+    /**
      * If true, the optional messaging module (bundled and distributed
      * separately) has been licensed and should be downloaded with the
      * distribution specified by {@link #license}.
-     * 
+     *
      * @since 1.0.0
      */
     @Parameter(property = "includeMessaging", defaultValue = "false")
@@ -143,7 +148,7 @@ public abstract class AbstractPackagerMojo extends AbstractBaseMojo {
      * If true, any file previously downloaded / unpacked will be overwritten
      * with this execution. Useful in the case of an interrupted download. Note
      * that this setting has no effect on unzip operations.
-     * 
+     *
      * @since 1.0.0
      */
     @Parameter(property = "overwrite", defaultValue = "false")
@@ -153,17 +158,17 @@ public abstract class AbstractPackagerMojo extends AbstractBaseMojo {
      * If true, makes a copy of the given distribution in a 'latest' subdirectory.
      * Can be useful for bookmarking documentation, etc. but adds additional install time
      * and storage requirements.
-     * 
+     *
      * @since 1.4.0
      */
     @Parameter(property = "copyToLatestFolder", defaultValue = "false")
     protected Boolean copyToLatestFolder;
-    
+
     /**
      * If true, no attempt is made to download any remote distribution. Files
      * will be loaded instead from a path constructed of the following parts
      * (e.g., C:/downloads/SmartGWT/PowerEdition/4.1d/2013-12-25/zip):
-     * 
+     *
      * <ul>
      * <li>{@link #workdir}</li>
      * <li>{@link #product}</li>
@@ -172,7 +177,7 @@ public abstract class AbstractPackagerMojo extends AbstractBaseMojo {
      * <li>{@link #buildDate}</li>
      * <li>"zip"</li>
      * </ul>
-     * 
+     *
      * @since 1.0.0
      */
     @Parameter(property = "skipDownload", defaultValue = "false")
@@ -192,8 +197,8 @@ public abstract class AbstractPackagerMojo extends AbstractBaseMojo {
     protected Boolean skipExtraction;
 
     /**
-     * One of SMARTGWT, SMARTCLIENT, or SMARTGWT_MOBILE.
-     * 
+     * One of SMARTGWT, SMARTCLIENT.
+     *
      * @since 1.0.0
      */
     @Parameter(property = "product", defaultValue = "SMARTGWT")
@@ -208,7 +213,7 @@ public abstract class AbstractPackagerMojo extends AbstractBaseMojo {
      * If false, each artifact's POM file is modified to remove the unwanted
      * qualifier. This can be useful if you need to deploy a development build
      * to a production environment.
-     * 
+     *
      * @since 1.0.0
      */
     @Parameter(property = "snapshots", defaultValue = "true")
@@ -217,7 +222,7 @@ public abstract class AbstractPackagerMojo extends AbstractBaseMojo {
     /**
      * The path to some directory that is to be used for storing downloaded
      * files, working copies, and so on.
-     * 
+     *
      * @since 1.0.0
      */
     @Parameter(property = "workdir", defaultValue = "${java.io.tmpdir}/${project.artifactId}")
@@ -230,7 +235,7 @@ public abstract class AbstractPackagerMojo extends AbstractBaseMojo {
      * smartclient.com website, used to download licensed products.
      * <p>
      * Not strictly necessary for unprotected (LGPL) distributions.
-     * 
+     *
      * @since 1.0.0
      */
     @Parameter(property = "serverId", defaultValue = "smartclient-developer")
@@ -239,7 +244,7 @@ public abstract class AbstractPackagerMojo extends AbstractBaseMojo {
     /**
      * The point where a subclass is able to manipulate the collection of
      * artifacts prepared for it by this object's {@link #execute()} method.
-     * 
+     *
      * @param artifacts
      *            A collection of Maven artifacts resulting from the download
      *            and preparation of a supported Isomorphic SDK.
@@ -256,7 +261,7 @@ public abstract class AbstractPackagerMojo extends AbstractBaseMojo {
     /**
      * Provides some initialization and validation steps around the collection
      * and transformation of an Isomorphic SDK.
-     * 
+     *
      * @throws MojoExecutionException
      *             When any fatal error occurs.
      * @throws MojoFailureException
@@ -268,9 +273,9 @@ public abstract class AbstractPackagerMojo extends AbstractBaseMojo {
         // they're not required
         UsernamePasswordCredentials credentials = getCredentials(serverId);
         if (credentials == null) {
-        	LOGGER.warn("No server configured with id '{}'.  Will be unable to authenticate.", serverId);
+            LOGGER.warn("No server configured with id '{}'.  Will be unable to authenticate.", serverId);
         }
-        
+
         String buildNumberFormat = "\\d.*\\.\\d.*[d|p]";
         if (!buildNumber.matches(buildNumberFormat)) {
             throw new MojoExecutionException(String.format(
@@ -280,86 +285,91 @@ public abstract class AbstractPackagerMojo extends AbstractBaseMojo {
 
         httpWorker = new HttpRequestManager(HOST, credentials, settings.getActiveProxy());
         Downloads dl = new Downloads(httpWorker);
-        
-        try {
 
-        	httpWorker.login();
-        	
-	        SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
-	        dateFormat.setLenient(false);
-	        if (buildDate == null) {
-	            Distribution d = Distribution.get(product, license);
-	            
-	            LOGGER.info("No buildDate provided.  Contacting Isomorphic build server to "
-	                + "look for the most recent distribution...");
-	            
-	            String link = dl.findCurrentBuild(d, buildNumber);
-	            
-	            if (link == null) {
-	                throw new MojoExecutionException("No build found for the given distribution.");
-	            }
-	
-	            LOGGER.debug("Extracting date from server response: '{}'", link);
-	            
-	            buildDate = StringUtils.substringAfterLast(link, "/");
-	
-	            LOGGER.info("buildDate set to '{}'", buildDate);
-	            
-	        }
+        try {
+            if (! skipDownload) {
+                httpWorker.login();
+            }
+
+            SimpleDateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd");
+            dateFormat.setLenient(false);
+            if (buildDate == null) {
+                if (skipDownload) {
+                    throw new MojoExecutionException("A buildDate value is required when the skipDownload parameter is true.");
+                }
+
+                Distribution d = Distribution.get(product, license);
+
+                LOGGER.info("No buildDate provided.  Contacting Isomorphic build server to "
+                    + "look for the most recent distribution...");
+
+                String link = dl.findCurrentBuild(d, buildNumber);
+
+                if (link == null) {
+                    throw new MojoExecutionException("No build found for the given distribution.");
+                }
+
+                LOGGER.debug("Extracting date from server response: '{}'", link);
+
+                buildDate = StringUtils.substringAfterLast(link, "/");
+
+                LOGGER.info("buildDate set to '{}'", buildDate);
+
+            }
 
             dateFormat.parse(buildDate);
-            
-	        File basedir = FileUtils.getFile(workdir, product.toString(), license.toString(),
-	            buildNumber, buildDate);
-	
-	        // add optional modules to the list of downloads
-	        List<License> licenses = new ArrayList<License>();
-	        licenses.add(license);
-	        if (license == POWER || license == ENTERPRISE) {
-	            if (includeAnalytics) {
-	                licenses.add(ANALYTICS_MODULE);
-	            }
-	            if (includeMessaging) {
-	                licenses.add(MESSAGING_MODULE);
-	            }
-	        }
-	
-	        // collect the maven artifacts and send them along to the abstract method
-	        Set<Module> artifacts = collect(licenses, basedir);
 
-	        String[] executables = { "bat", "sh", "command" };
-	        Collection<File> scripts = FileUtils.listFiles(basedir, executables, true);
-	        
-	        if (copyToLatestFolder) {
-		        File bookmarkable = new File(basedir.getParent(), "latest");
-		        LOGGER.info("Copying distribution to '{}'", bookmarkable.getAbsolutePath());
-		        try {
-		            FileUtils.forceMkdir(bookmarkable);
-		            FileUtils.cleanDirectory(bookmarkable);
-		            FileUtils.copyDirectory(basedir, bookmarkable,
-		                FileFilterUtils.notFileFilter(FileFilterUtils.nameFileFilter("zip")));
-		            
-		            scripts.addAll(FileUtils.listFiles(bookmarkable, executables, true));
-		            
-		        } catch (IOException e) {
-		            throw new MojoFailureException("Unable to copy distribution contents", e);
-		        }	        	
-	        }
-	
-	        for (File script : scripts) {
-	            script.setExecutable(true);
-	            LOGGER.debug("Enabled execute permissions on file '{}'", script.getAbsolutePath());
-	        }
-        
-	        doExecute(artifacts);
-	        
+            File basedir = FileUtils.getFile(workdir, product.toString(), license.toString(),
+                buildNumber, buildDate);
+
+            // add optional modules to the list of downloads
+            List<License> licenses = new ArrayList<License>();
+            licenses.add(license);
+            if (license == POWER || license == ENTERPRISE) {
+                if (includeAnalytics) {
+                    licenses.add(ANALYTICS_MODULE);
+                }
+                if (includeMessaging) {
+                    licenses.add(MESSAGING_MODULE);
+                }
+            }
+
+            // collect the maven artifacts and send them along to the abstract method
+            Set<Module> artifacts = collect(licenses, basedir);
+
+            String[] executables = { "bat", "sh", "command" };
+            Collection<File> scripts = FileUtils.listFiles(basedir, executables, true);
+
+            if (copyToLatestFolder) {
+                File bookmarkable = new File(basedir.getParent(), "latest");
+                LOGGER.info("Copying distribution to '{}'", bookmarkable.getAbsolutePath());
+                try {
+                    FileUtils.forceMkdir(bookmarkable);
+                    FileUtils.cleanDirectory(bookmarkable);
+                    FileUtils.copyDirectory(basedir, bookmarkable,
+                        FileFilterUtils.notFileFilter(FileFilterUtils.nameFileFilter("zip")));
+
+                    scripts.addAll(FileUtils.listFiles(bookmarkable, executables, true));
+
+                } catch (IOException e) {
+                    throw new MojoFailureException("Unable to copy distribution contents", e);
+                }
+            }
+
+            for (File script : scripts) {
+                script.setExecutable(true);
+                LOGGER.debug("Enabled execute permissions on file '{}'", script.getAbsolutePath());
+            }
+
+            doExecute(artifacts);
+
         } catch (ParseException e) {
             throw new MojoExecutionException(String.format(
                 "buildDate '%s' must take the form yyyy-MM-dd.", buildDate));
         } finally {
-            httpWorker.logout();        	
-        }    
-        
+            httpWorker.logout();
+        }
+
     }
 
     /**
@@ -367,11 +377,11 @@ public abstract class AbstractPackagerMojo extends AbstractBaseMojo {
      * from them, and use the results to create Maven artifacts as appropriate:
      * <p>
      * Try to install all of the main artifacts - e.g., those found in lib/*.jar
-     * and assembly/*.zip 
+     * and assembly/*.zip
      * <br>
      * Try to match main artifacts to 'subartifacts' by name and attach them
      * (with classifiers as necessary)
-     * 
+     *
      * @param downloads
      *            The list of licenses top be included in the distribution.
      *            Multiple licenses are only allowed to support the inclusion of
@@ -411,13 +421,17 @@ public abstract class AbstractPackagerMojo extends AbstractBaseMojo {
                 LOGGER.info("Unpacking downloaded file/s to '{}'", basedir);
                 for (Distribution distribution : distributions) {
                     distribution.unpack(basedir);
+                    if (skins != null) {
+                        LOGGER.info("Pruning unwanted skins...");
+                        skin(basedir, distribution.getSkinResources());
+                    }
                 }
             }
 
+            // TODO it'd be better if this didn't have to know where the files were located after unpacking
+
             // it doesn't strictly read this way, but we're looking for
             // lib/*.jar, pom/*.xml, assembly/*.zip
-            // TODO it'd be better if this didn't have to know where the files
-            // were located after unpacking
             Collection<File> files = FileUtils.listFiles(
                 basedir,
                 FileFilterUtils.or(FileFilterUtils.suffixFileFilter("jar"),
@@ -427,21 +441,16 @@ public abstract class AbstractPackagerMojo extends AbstractBaseMojo {
                     FileFilterUtils.nameFileFilter("pom"),
                     FileFilterUtils.nameFileFilter("assembly"))
             );
-            
+
             if (files.isEmpty()) {
-                throw new MojoExecutionException(
-                    String
-                        .format(
-                            "There don't appear to be any files to work with at '%s'.  Check earlier log entries for clues.",
-                            basedir.getAbsolutePath()));
+                throw new MojoExecutionException(String.format("There don't appear to be any files to work with at '%s'.  Check earlier log entries for clues.", basedir.getAbsolutePath()));
             }
 
             Set<Module> result = new TreeSet<Module>();
             for (File file : files) {
                 try {
 
-                    String base = FilenameUtils.getBaseName(file.getName()
-                        .replaceAll("_", "-"));
+                    String base = FilenameUtils.getBaseName(file.getName().replaceAll("_", "-"));
 
                     // poms don't need anything else
                     if ("xml".equals(FilenameUtils.getExtension(file.getName()))) {
@@ -450,19 +459,14 @@ public abstract class AbstractPackagerMojo extends AbstractBaseMojo {
                     }
 
                     // for each jar/zip, find the matching pom
-                    IOFileFilter filter = new WildcardFileFilter(base + ".pom");
+                    IOFileFilter filter = new WildcardFileFilter(base + ".pom", IOCase.INSENSITIVE);
                     Collection<File> poms = FileUtils.listFiles(basedir, filter,
                         TrueFileFilter.INSTANCE);
                     if (poms.size() != 1) {
-                        LOGGER
-                            .warn(
-                                "Expected to find exactly 1 POM matching artifact with name '{}', but found {}.  Skpping installation.",
-                                base, poms.size());
+                        LOGGER.warn("Expected to find exactly 1 POM matching artifact with name '{}', but found {}.  Skpping installation.",base, poms.size());
                         continue;
                     }
 
-                    
-                    
                     Model model = getModelFromFile(poms.iterator().next());
                     Module module = new Module(model, file);
 
@@ -482,10 +486,7 @@ public abstract class AbstractPackagerMojo extends AbstractBaseMojo {
                         FileFilterUtils.nameFileFilter("lib"));
 
                     if (doc.size() != 1) {
-                        LOGGER
-                            .debug(
-                                "Found {} javadoc attachments with prefix '{}'.  Skipping attachment.",
-                                doc.size(), prefix);
+                        LOGGER.debug("Found {} javadoc attachments with prefix '{}'.  Skipping attachment.", doc.size(), prefix);
                     } else {
                         module.attach(doc.iterator().next(), "javadoc");
                     }
@@ -507,7 +508,7 @@ public abstract class AbstractPackagerMojo extends AbstractBaseMojo {
      * {@link #snapshots} property is true, and we're working with a development
      * build ({@link #buildNumber} ends with 'd'), the POM is modified to remove
      * the SNAPSHOT qualifier.
-     * 
+     *
      * @param pom
      *            the POM file containing the artifact metadata
      * @return A Maven model to be used at
@@ -533,15 +534,43 @@ public abstract class AbstractPackagerMojo extends AbstractBaseMojo {
         ModelBuildingRequest request = new DefaultModelBuildingRequest();
         request.setModelResolver(resolver);
         request.setPomFile(pom);
-        
+
         Model model = modelBuilder.buildRawModel(pom, 0, false).get();
         Parent parent = model.getParent();
         if (parent != null) {
-        		model.setGroupId(parent.getGroupId());
-        		model.setVersion(parent.getVersion());
+                model.setGroupId(parent.getGroupId());
+                model.setVersion(parent.getVersion());
         }
-        
+
         return model;
     }
 
+    private void skin(File basedir, Map<String, String> skinResources) throws MojoExecutionException, IOException {
+        Map<String, String> props = new HashMap<>();
+        props.put("create", "false");
+
+        List<String> requested = new ArrayList<>(Splitter.on(",").trimResults().splitToList(skins.toLowerCase()));
+        requested.add("toolskin");
+
+        Set<String> keys = skinResources.keySet();
+        for(String key : keys) {
+            String archive = basedir.getCanonicalPath() + "/" + key;
+            String skinDir = skinResources.get(key);
+            if (LOGGER.isDebugEnabled()) {
+                LOGGER.debug("Opening file at '{}' for modification", archive);
+            }
+            URI uri = URI.create("jar:file:" + archive);
+            try (FileSystem fs = FileSystems.newFileSystem(uri, props)) {
+                try (DirectoryStream<Path> ds = Files.newDirectoryStream(fs.getPath(skinDir), Files::isDirectory)) {
+                    for (Path path : ds) {
+                        if (requested.contains(path.getFileName().toString().toLowerCase())) {
+                            continue;
+                        }
+                        LOGGER.info("Deleting skin resources provided at '{}'", path);
+                        FileSystemUtils.deleteRecursively(path);
+                    }
+                }
+            }
+        }
+    }
 }

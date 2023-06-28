@@ -1,7 +1,5 @@
 package com.isomorphic.maven.mojo;
 
-import java.util.List;
-
 import org.apache.http.auth.UsernamePasswordCredentials;
 import org.apache.maven.model.building.ModelBuilder;
 import org.apache.maven.plugin.AbstractMojo;
@@ -18,12 +16,13 @@ import org.apache.maven.settings.crypto.SettingsDecryptionRequest;
 import org.apache.maven.settings.crypto.SettingsDecryptionResult;
 import org.eclipse.aether.RepositorySystem;
 import org.eclipse.aether.RepositorySystemSession;
-import org.eclipse.aether.impl.ArtifactResolver;
 import org.eclipse.aether.impl.RemoteRepositoryManager;
 import org.eclipse.aether.repository.Authentication;
 import org.eclipse.aether.util.repository.AuthenticationBuilder;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import java.util.List;
 
 public abstract class AbstractBaseMojo extends AbstractMojo {
 
@@ -32,24 +31,21 @@ public abstract class AbstractBaseMojo extends AbstractMojo {
     @Parameter(readonly = true, defaultValue = "${repositorySystemSession}")
     protected RepositorySystemSession repositorySystemSession;
 
+    @Parameter( defaultValue = "${settings}", readonly = true )
+    protected Settings settings;
+
+    @Parameter( defaultValue = "${project}", readonly = true )
+    protected MavenProject project;
+
     @Component
     protected ModelBuilder modelBuilder;
 
     @Component
-    protected MavenProject project;
-
-    @Component
     protected RepositorySystem repositorySystem;
-    
-    @Component
-    protected ArtifactResolver artifactResolver;
 
     @Component
     protected RemoteRepositoryManager remoteRepositoryManager;
     
-    @Component
-    protected Settings settings;
-
     @Component
     private SettingsDecrypter settingsDecrypter; 
 
@@ -72,7 +68,7 @@ public abstract class AbstractBaseMojo extends AbstractMojo {
      * Returns user credentials for the server with the given id, as kept in Maven
      * settings.
      * <p>
-     * Refer to http://maven.apache.org/settings.html#Servers
+     * Refer to Maven <a href="http://maven.apache.org/settings.html#Servers">Servers</a> doc.
      *
      * @param serverId the id of the server containing the authentication credentials
      * @return the Authentication credentials for the given server with the given id
@@ -98,7 +94,7 @@ public abstract class AbstractBaseMojo extends AbstractMojo {
      * Decrypt settings and return the server element with the given id.  Useful for e.g., reading encrypted
      * user credentials.
      * <p>
-     * Refer to http://maven.apache.org/guides/mini/guide-encryption.html
+     * Refer to Maven <a href="http://maven.apache.org/guides/mini/guide-encryption.html">encryption</a> doc.
      *
      * @param id the id of the server to be decrypted
      * @return a Server with its protected elements decrypted, if one is found with the given id.  Null otherwise.

@@ -15,17 +15,21 @@
    limitations under the License.
 -->
 
-###FAQ
+### FAQ
 
-1. __Why does my install fail with an error like, "Failure during assembly collection: error in opening zip file"?__
+1. **Why does my install fail with an error like, "Failure during assembly collection: error in opening zip file"?**
 
     This indicates that the zip file is somehow corrupt, as can happen when an execution is interrupted.  Just run the goal again, providing a 'true' value to the [overwrite](./apidocs/com/isomorphic/maven/mojo/AbstractPackagerMojo.html#overwrite) property.
 
-2. __Does your plugin detect and use proxy settings?__
+2. **Why does my project build fail using when using overlays with newer versions of the Maven WAR Plugin?**
+
+    Errors during overlay extraction, such as _"Entry is outside of the target directory (/)"_, are resolved using versions 1.4.6 or later.
+
+3. **Does your plugin detect and use proxy settings?**
 
     Yes, the plugin should respect your (active) [Maven proxy settings](http://maven.apache.org/guides/mini/guide-proxies.html).
 
-3. __Which dependencies do I need for my project?__
+4. **Which dependencies do I need for my project?**
 
     Users of SmartGWT or SmartClient LGPL editions only get 
 

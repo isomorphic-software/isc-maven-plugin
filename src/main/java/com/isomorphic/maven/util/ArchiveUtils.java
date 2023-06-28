@@ -19,24 +19,16 @@ package com.isomorphic.maven.util;
  * under the License.
  */
 
-import java.io.BufferedInputStream;
+import org.apache.commons.io.FilenameUtils;
+import org.codehaus.plexus.archiver.jar.JarArchiver;
+import org.codehaus.plexus.archiver.util.DefaultFileSet;
+import org.codehaus.plexus.archiver.zip.ZipArchiver;
+import org.codehaus.plexus.archiver.zip.ZipUnArchiver;
+
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.Enumeration;
-import java.util.jar.Attributes;
-import java.util.jar.JarEntry;
-import java.util.jar.JarOutputStream;
-import java.util.jar.Manifest;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.zip.ZipEntry;
-import java.util.zip.ZipFile;
-import java.util.zip.ZipOutputStream;
-
-import org.apache.commons.io.FileUtils;
-import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.io.IOUtils;
 
 /**
  * A collection of static utilities useful for working with JAR/ZIP archives.
@@ -47,35 +39,35 @@ public class ArchiveUtils {
      * Builds a JAR file from the contents of a directory on the filesystem (recursively).
      * Adapted from stackoverflow solution.
      * <p>
-     * Refer to http://stackoverflow.com/questions/1281229/how-to-use-jaroutputstream-to-create-a-jar-file
+     * Refer to <a href="http://stackoverflow.com/questions/1281229/how-to-use-jaroutputstream-to-create-a-jar-file"></a>
      *
      * @param directory the directory containing the content to be xzipped up
-     * @param output the zip file to be written to
+     * @param output    the zip file to be written to
      * @throws IOException when any I/O error occurs
      */
     public static void jar(File directory, File output) throws IOException {
-        Manifest manifest = new Manifest();
-        manifest.getMainAttributes().put(Attributes.Name.MANIFEST_VERSION, "1.0");
-        output.getParentFile().mkdirs();
-        JarOutputStream target = new JarOutputStream(new FileOutputStream(output), manifest);
-        zip(directory, directory, target);
-        target.close();
+        JarArchiver ja = new JarArchiver();
+        ja.addFileSet(new DefaultFileSet(directory));
+        ja.setDestFile(output);
+
+        ja.createArchive();
     }
 
     /**
      * Builds a ZIP file from the contents of a directory on the filesystem (recursively).
      * <p>
-     * Refer to http://stackoverflow.com/questions/1281229/how-to-use-jaroutputstream-to-create-a-jar-file
+     * Refer to <a href="http://stackoverflow.com/questions/1281229/how-to-use-jaroutputstream-to-create-a-jar-file"></a>
      *
      * @param directory the directory containing the content to be xzipped up
-     * @param output the zip file to be written to
+     * @param output    the zip file to be written to
      * @throws IOException when any I/O error occurs
      */
     public static void zip(File directory, File output) throws IOException {
-        output.getParentFile().mkdirs();
-        ZipOutputStream target = new ZipOutputStream(new FileOutputStream(output));
-        zip(directory, directory, target);
-        target.close();
+        ZipArchiver za = new ZipArchiver();
+        za.addFileSet(new DefaultFileSet(directory));
+        za.setDestFile(output);
+
+        za.createArchive();
     }
 
     /**
@@ -87,56 +79,52 @@ public class ArchiveUtils {
      */
     public static void unzip(File source, File target) throws IOException {
 
-        ZipFile zip = new ZipFile(source);
-        Enumeration<? extends ZipEntry> entries = zip.entries();
-        while (entries.hasMoreElements()) {
-            ZipEntry entry = entries.nextElement();
-            File file = new File(target,  entry.getName());
-            FileUtils.copyInputStreamToFile(zip.getInputStream(entry), file);
-        }
+        ZipUnArchiver ua = new ZipUnArchiver(source);
+        ua.setDestFile(target);
+        ua.extract();
     }
 
     /**
      * Derives a new file path, in whole or in part, from an existing path.  The following use cases are supported explicitly:
      * <ul>
-     * 	<li>
-     * 		Rename a file (example: smartgwt-lgpl.jar)
-     * 		<p>
-     * 		<code>
-     * 			ArchiveUtils.rewritePath("smartgwtee-4.1d/lib/smartgwt.jar", "smartgwt-lgpl.jar");
-     * 		</code>
-     * 	</li>
-     * 	<li>
-     * 		Move to another directory (example: target/smartgwt.jar)
-     *		<p>
-     * 		<code>
-     * 			ArchiveUtils.rewritePath("smartgwtee-4.1d/lib/smartgwt.jar", "target");
-     * 		</code>
+     * <li>
+     *      Rename a file (example: smartgwt-lgpl.jar)
+     *      <p>
+     *      <code>
+     *      ArchiveUtils.rewritePath("smartgwtee-4.1d/lib/smartgwt.jar", "smartgwt-lgpl.jar");
+     *      </code>
+     * </li>
+     * <li>
+     *      Move to another directory (example: target/smartgwt.jar)
+     *      <p>
+     *      <code>
+     *      ArchiveUtils.rewritePath("smartgwtee-4.1d/lib/smartgwt.jar", "target");
+     *      </code>
      * </li>
      * <li>Move and rename (example: target/smartgwt-lgpl.jar)
-     * 		<p>
-     * 		<code>
-     * 			ArchiveUtils.rewritePath("smartgwtee-4.1d/lib/smartgwt.jar", "target/smartgwt-lgpl.jar");
-     * 		</code>
+     *      <p>
+     *      <code>
+     *          ArchiveUtils.rewritePath("smartgwtee-4.1d/lib/smartgwt.jar", "target/smartgwt-lgpl.jar");
+     *      </code>
      * </li>
-     *  <li>Move to new root directory, preserving some part of the existing path
-     *  	<ul>
-     *  		<li>
-     *  			example: doc/api/com/isomorphic/servlet/IDACall.html
-     *  			<p>
-     *  			<code>
-     *  				ArchiveUtils.rewritePath("smartgwtee-4.1d/doc/javadoc/com/isomorphic/servlet/IDACall.html","doc/api/#javadoc");
-     *  			</code>
-     *    		</li>
-     *    		<li>
-     *  			example: doc/api/com/isomorphic/servlet/network/FileAssembly.html
-     *  			<p>
-     *  			<code>
-     * 	 				ArchiveUtils.rewritePath("smartgwtee-4.1d/doc/javadoc/com/isomorphic/servlet/CompressionFilter.html", "doc/api/#javadoc/network");
-     *  			</code>
-     *    		</li>
-     *  	</ul>
-     *   </li>
+     * <li>Move to new root directory, preserving some part of the existing path
+     *      <ul>
+     *          <li>
+     *              example: doc/api/com/isomorphic/servlet/IDACall.html
+     *              <p>
+     *              <code>
+     *                  ArchiveUtils.rewritePath("smartgwtee-4.1d/doc/javadoc/com/isomorphic/servlet/IDACall.html","doc/api/#javadoc");
+     *              </code>
+     *          </li>
+     *          <li>
+     *              example: doc/api/com/isomorphic/servlet/network/FileAssembly.html
+     *              <p>
+     *              <code>
+     * 	                ArchiveUtils.rewritePath("smartgwtee-4.1d/doc/javadoc/com/isomorphic/servlet/CompressionFilter.html", "doc/api/#javadoc/network");
+     *              </code>
+     *          </li>
+     *      </ul>
+     * </li>
      * </ul>
      *
      * @param oldValue the existing path
@@ -183,62 +171,6 @@ public class ArchiveUtils {
         return FilenameUtils.normalize(path + "/" + filename);
     }
 
-    /**
-     * Steps common to archiving both zip and jar files, which include reading files from disk and using
-     * their contents to create {@link ZipEntry ZipEntries} and writing them to a ZipOutputStream.
-     */
-    private static void zip(File root, File source, ZipOutputStream target) throws IOException {
-        String relativePath = root.toURI().relativize(source.toURI()).getPath().replace("\\", "/");
 
-        BufferedInputStream in = null;
-        try {
-            if (source.isDirectory()) {
-
-                /*
-                  Recent Plexus UnArchiver versions (used e.g., when unpacking an overlay assembly) fail if the root
-                  directory == '/':
-
-                    [ERROR] Error unpacking file ... Entry is outside of the tqrget directory (/)
-
-                  JDK ZipEntry still depends on subdirectories ending in '/', so allowing zero-length string as root
-                  works around the inconsistency but currently causes a bogus (yet benign) warning in the log that
-                  looks something like the following:
-
-                    [WARNING] Unable to expand to file /foo/com.isomorphic.smartclient.eval/smartclient-tools-resources
-                */
-                if (relativePath.length() > 0 && !relativePath.endsWith("/")) {
-                    relativePath += "/";
-                }
-                ZipEntry entry = ZipEntryFactory.get(target, relativePath);
-                entry.setTime(source.lastModified());
-                target.putNextEntry(entry);
-                target.closeEntry();
-
-                for (File nestedFile : source.listFiles()) {
-                    zip(root, nestedFile, target);
-                }
-                return;
-            }
-
-            ZipEntry entry = ZipEntryFactory.get(target, relativePath);
-            entry.setTime(source.lastModified());
-            target.putNextEntry(entry);
-            in = new BufferedInputStream(FileUtils.openInputStream(source));
-            IOUtils.copy(in, target);
-            target.closeEntry();
-
-        } finally {
-            IOUtils.closeQuietly(in);
-        }
-    }
-
-    private static class ZipEntryFactory {
-        static ZipEntry get(ZipOutputStream target, String name) {
-            if (target instanceof JarOutputStream) {
-                return new JarEntry(name);
-            }
-            return new ZipEntry(name);
-        }
-    }
 
 }

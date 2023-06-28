@@ -1,4 +1,4 @@
-###Artifacts
+### Artifacts
 
 The archives available on the Isomorphic Software [builds page](http://www.smartclient.com/builds) contain everything you need to write applications using SmartClient / SmartGWT.
 
@@ -12,7 +12,7 @@ Each artifact's POM contains a description outlining what it's for, and in many 
 
 ---
 
-####Overlays
+#### Overlays
 
 The Maven WAR Plugin provides an overlay feature, allowing you to "include" resources from one artifact in another at build-time.  From its [documentation](http://maven.apache.org/plugins/maven-war-plugin/overlays.html):
 
@@ -35,15 +35,15 @@ SmartClient client and server resources are made available in this way, as are a
 
 Again, details of each are documented in the POMs themselves.  Refer to your local repository following installation, or to the copies left in your [${workdir}/${product}/${license}/${buildNumber}/latest](./apidocs/com/isomorphic/maven/mojo/AbstractPackagerMojo.html) folder.
 
-####Resources
+#### Resources
 
 Some resources have been repackaged and left in .zip format for you to unpack as desired with e.g., the Maven Dependency Plugin's [Unpack Depdencies](https://maven.apache.org/plugins/maven-dependency-plugin/unpack-dependencies-mojo.html) goal.  The isc-selenium-resources artifact is one such case.  It may be that these artifacts are used just as easily, or more so, in WAR format, so a change to that effect is possible at some point in the future.  Let us know if you prefer one mechanism to another.
 
-####JavaDoc
+#### JavaDoc
 
 Isomorphic builds currently include only 2 JavaDoc bundles - one for all server packages, and one for all client packages (in the case of SmartGWT).  The plugin just repackages the existing JavaDoc into JAR file format, so that each artifact can be installed / deployed to your repository with JavaDoc attached (useful for IDE integrations, etc.) - isomorphic-javadoc with isomorphic-* artifacts, and smartgwt-javadoc with smartgwt-*.
 
-####Dependency Groups
+#### Dependency Groups
 
 These are just a means for grouping logical dependencies together, convenient when those lists get long, as is the case with e.g., the dependencies required only when using PDF Export functionality present in isomorphic-core-rpc. 
 
