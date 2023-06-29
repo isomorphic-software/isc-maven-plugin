@@ -550,7 +550,12 @@ public abstract class AbstractPackagerMojo extends AbstractBaseMojo {
         props.put("create", "false");
 
         List<String> requested = new ArrayList<>(Splitter.on(",").trimResults().splitToList(skins.toLowerCase()));
+
+        // preserve for simplicity
+        requested.add("enterprise");
+        requested.add("fonts");
         requested.add("toolskin");
+        requested.add("toolskinnative");
 
         Set<String> keys = skinResources.keySet();
         for(String key : keys) {
@@ -563,13 +568,16 @@ public abstract class AbstractPackagerMojo extends AbstractBaseMojo {
             try (FileSystem fs = FileSystems.newFileSystem(uri, props)) {
                 try (DirectoryStream<Path> ds = Files.newDirectoryStream(fs.getPath(skinDir), Files::isDirectory)) {
                     for (Path path : ds) {
-                        if (requested.contains(path.getFileName().toString().toLowerCase())) {
+                        String skin = path.getFileName().toString().toLowerCase().replace("/", "");
+
+                        if (requested.contains(skin)) {
+                            LOGGER.debug("Preserving '{}' skin", skin);
                             continue;
                         }
-                        LOGGER.info("Deleting skin resources provided at '{}'", path);
+                        LOGGER.info("Deleting '{}' skin resources at '{}'", skin, path);
                         FileSystemUtils.deleteRecursively(path);
                     }
-                }
+                } catch (NotDirectoryException ignore) {}
             }
         }
     }
