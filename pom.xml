@@ -70,15 +70,34 @@
 
     <properties>
         <mvn.api.version>3.9.2</mvn.api.version>
-        <maven.compiler.release>8</maven.compiler.release>
     </properties>
 
     <build>
         <plugins>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-enforcer-plugin</artifactId>
+                <version>3.5.0</version>
+                <executions>
+                  <execution>
+                    <id>enforce-maven</id>
+                    <goals>
+                      <goal>enforce</goal>
+                    </goals>
+                    <configuration>
+                      <rules>
+                        <requireMavenVersion>
+                          <version>3.6.3</version>
+                        </requireMavenVersion>
+                      </rules>
+                    </configuration>
+                  </execution>
+                </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-plugin-plugin</artifactId>
-                <version>3.9.0</version>
+                <version>3.12.0</version>
                 <configuration>
                     <skipErrorNoDescriptorsFound>true</skipErrorNoDescriptorsFound>
                 </configuration>
@@ -102,12 +121,12 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
-                <version>3.11.0</version>
+                <version>3.13.0</version>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
-                <version>3.5.0</version>
+                <version>3.11.2</version>
                 <configuration>
                     <doclint>all,-missing</doclint>
                     <source>1.8</source>
@@ -116,7 +135,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-site-plugin</artifactId>
-                <version>3.12.1</version>
+                <version>4.0.0-M16</version>
                 <!-- Require that site be deployed explicitly via github plugin below -->
                 <configuration>
                     <skipDeploy>true</skipDeploy>
@@ -142,6 +161,11 @@
                     </dependency>
                 </dependencies>
             </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-release-plugin</artifactId>
+                <version>3.1.1</version>
+              </plugin>
             <plugin>
                 <!-- 
                      Site should normally be re/deployed following a release, by checkout of
@@ -201,7 +225,7 @@
                 <dependency>
                   <groupId>com.isomorphic.extras</groupId>
                   <artifactId>isomorphic-m2pluginextras</artifactId>
-                  <version>13.0-p20230627</version>
+                  <version>13.1-p20250101</version>
                   <scope>provided</scope>
                 </dependency>
             </dependencies>
@@ -213,12 +237,12 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-plugin-plugin</artifactId>
-                <version>3.9.0</version>
+                <version>3.12.0</version>
             </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-project-info-reports-plugin</artifactId>
-                <version>3.4.5</version>
+                <version>3.8.0</version>
                 <reportSets>
                     <reportSet>
                         <reports>
@@ -236,7 +260,7 @@
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jxr-plugin</artifactId>
-                <version>3.3.0</version>
+                <version>3.6.0</version>
             </plugin>
         </plugins>
     </reporting>
