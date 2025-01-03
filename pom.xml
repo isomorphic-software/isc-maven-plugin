@@ -21,7 +21,7 @@
 
     <groupId>com.isomorphic</groupId>
     <artifactId>isc-maven-plugin</artifactId>
-    <version>1.4.6</version>
+    <version>1.4.6-SNAPSHOT</version>
     <packaging>maven-plugin</packaging>
 
     <name>isc-maven-plugin</name>
@@ -66,8 +66,7 @@
         <url>https://github.com/isomorphic-software/${project.artifactId}.git</url>
         <connection>scm:git:ssh@github.com:isomorphic-software/${project.artifactId}.git</connection>
         <developerConnection>scm:git:ssh@github.com:isomorphic-software/${project.artifactId}.git</developerConnection>
-      <tag>REL-1.4.6</tag>
-  </scm>
+    </scm>
 
     <properties>
         <mvn.api.version>3.9.2</mvn.api.version>
