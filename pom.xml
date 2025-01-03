@@ -64,8 +64,8 @@
     </issueManagement>
     <scm>
         <url>https://github.com/isomorphic-software/${project.artifactId}.git</url>
-        <connection>scm:git:ssh@github.com:isomorphic-software/${project.artifactId}.git</connection>
-        <developerConnection>scm:git:ssh@github.com:isomorphic-software/${project.artifactId}.git</developerConnection>
+        <connection>scm:git:git@github.com:isomorphic-software/${project.artifactId}.git</connection>
+        <developerConnection>scm:git:git@github.com:isomorphic-software/${project.artifactId}.git</developerConnection>
     </scm>
 
     <properties>
