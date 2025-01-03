@@ -31,7 +31,7 @@ All the usual Maven configuration mechanisms apply, including the use of system 
     
 Most users will need minor modifications to user settings in either case - the [configuration example](./examples/configuration.html) illustrates typical requirements.  Refer to each goal's [plugin documentation](./plugin-info.html) for a complete listing of configuration parameters.      
  
-###Convention
+### Convention
 
 Isomorphic historically uses a versioning scheme that may be unfamiliar to Maven users.  If you haven't already, you should have a read through the narrative at the [nightly builds](http://www.smartclient.com/builds) page. Do notice that the SmartClient version numbers and SmartGWT version numbers are not necessarily the same.  This is important because the plugin uses the product, license, and version number to determine both the URL of the download/s and the local path of the file as it should exist following the download.
 

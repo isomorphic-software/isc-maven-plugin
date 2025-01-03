@@ -23,7 +23,7 @@
 
 2. **Why does my project build fail using when using overlays with newer versions of the Maven WAR Plugin?**
 
-    Errors during overlay extraction, such as _"Entry is outside of the target directory (/)"_, are resolved using versions 1.4.6 or later.
+    Errors during overlay extraction, such as _"Entry is outside of the target directory (/)"_, are resolved using plugin versions 1.4.6 or later.
 
 3. **Does your plugin detect and use proxy settings?**
 
