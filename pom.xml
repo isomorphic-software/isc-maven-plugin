@@ -21,7 +21,7 @@
 
     <groupId>com.isomorphic</groupId>
     <artifactId>isc-maven-plugin</artifactId>
-    <version>1.4.7-SNAPSHOT</version>
+    <version>1.4.7</version>
     <packaging>maven-plugin</packaging>
 
     <name>isc-maven-plugin</name>
@@ -56,6 +56,11 @@
             <name>Daniel Johansson</name>
             <email>daniel.johansson@wireweb.co.uk</email>
         </developer>
+        <developer>
+            <id>lgwr</id>
+            <name>Wayne Russell</name>
+            <email>wayne@isomorphic.com</email>
+        </developer>
     </developers>
 
     <issueManagement>
@@ -71,6 +76,9 @@
 
     <properties>
         <mvn.api.version>3.9.2</mvn.api.version>
+
+      	<!-- default - override on the CLI -->
+      	<isc.extras.version>13.1-p20250101</isc.extras.version>
     </properties>
 
     <build>
@@ -123,7 +131,9 @@
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-compiler-plugin</artifactId>
                 <version>3.13.0</version>
-            </plugin>
+				<configuration>
+					<release>8</release>
+				</configuration>            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>
@@ -230,7 +240,7 @@
                 <dependency>
                   <groupId>com.isomorphic.extras</groupId>
                   <artifactId>isomorphic-m2pluginextras</artifactId>
-                  <version>13.1-p20250101</version>
+                  <version>${isc.extras.version}</version>
                   <scope>provided</scope>
                 </dependency>
             </dependencies>

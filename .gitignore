@@ -1,1 +1,5 @@
 /target
+/bin
+/.metadata
+/.idea
+/effective-pom.xml

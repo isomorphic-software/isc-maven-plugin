@@ -168,7 +168,7 @@ public class Downloads {
             OutputStream outputStream = null;
 
             try {
-                LOGGER.info("Downloading file to '{}'", file.getAbsolutePath());
+                LOGGER.info("Downloading file '{}' from '{}' to '{}'", filename, link, file.getAbsolutePath());
                 outputStream = new LoggingCountingOutputStream(new FileOutputStream(file), entity.getContentLength());
                 entity.writeTo(outputStream);
                 distribution.getFiles().add(file);

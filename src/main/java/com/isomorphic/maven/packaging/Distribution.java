@@ -64,8 +64,9 @@ public final class Distribution {
     private static final String JAR_CONFLICTS = "**/smartgwtee.jar, **/isc-jakarta-oro*.jar, **/isomorphic_realtime_messaging.jar";
 
     //ant-style wildcards used at extraction for filtering the distribution for the POMs to be included
-    private static final String POM_SMARTCLIENT = "**/smartclient-*resources.pom, **/smartclient-tools.xml, **/smartclient-messaging.xml, **/smartclient-analytics.xml";
-    private static final String POM_SMARTGWT = "**/smartgwt-skins.pom, **/smartgwt-analytics.pom, **/smartgwt-messaging.pom";
+    private static final String POM_SMARTCLIENT = "**/smartclient-*resources.pom, **/smartclient-tools.xml, **/smartclient-messaging.xml, " +
+                                                    "**/smartclient-analytics.xml, **/smartclient-ai.xml";
+    private static final String POM_SMARTGWT = "**/smartgwt-skins.pom, **/smartgwt-analytics.pom, **/smartgwt-messaging.pom, **/smartgwt-ai.pom";
     private static final String POM_SERVER = "**/isomorphic-*.pom, **/isomorphic-*.xml, **/dependencygroup-*.xml";
     private static final String POM_SHARED = "**/isc-*.pom, **/isc-*.xml, **/archetype-*.pom, **/archetype-*.xml";
 
@@ -96,6 +97,7 @@ public final class Distribution {
         create(SMARTCLIENT, ENTERPRISE);
         create(SMARTCLIENT, ANALYTICS_MODULE);
         create(SMARTCLIENT, MESSAGING_MODULE);
+        create(SMARTCLIENT, AI_MODULE);
 
         //the smartgwt lgpl edition provides links to a bunch of resources that are also contained in the .zip - ignore them
         create(SMARTGWT, LGPL)
@@ -118,6 +120,7 @@ public final class Distribution {
 
         create(SMARTGWT, ANALYTICS_MODULE);
         create(SMARTGWT, MESSAGING_MODULE);
+        create(SMARTGWT, AI_MODULE);
 
         //mobile user documentation is not currently in pdf format, so the default pattern does not match
         create(SMARTGWT_MOBILE, LGPL)
@@ -167,6 +170,8 @@ public final class Distribution {
                     .contents("assembly/smartclient-analytics-resources/isomorphic/system/modules-debug", "**/modules-debug/ISC_Analytics*", null)
                     .contents("assembly/smartclient-messaging-resources/isomorphic/system/modules", "ISC_RealtimeMessaging*,**/modules/ISC_RealtimeMessaging*", null)
                     .contents("assembly/smartclient-messaging-resources/isomorphic/system/modules-debug", "**/modules-debug/ISC_RealtimeMessaging*", null)
+                    .contents("assembly/smartclient-ai-resources/isomorphic/system/modules", "**/modules-debug/ISC_AI*", null)
+                    .contents("assembly/smartclient-ai-resources/isomorphic/system/modules-debug", "**/modules-debug/ISC_AI*", null)
                     .contents("assembly/smartclient-tools-resources/#smartclientSDK", SMARTCLIENT_SDK_INCLUDES, SMARTCLIENT_SDK_EXCLUDES);
         } else if (product == SMARTGWT) {
 
@@ -174,6 +179,7 @@ public final class Distribution {
             distribution
                 .contents("lib/smartgwt-analytics.jar", "**/analytics.jar", null)
                 .contents("lib/smartgwt-messaging.jar", "**/messaging.jar", null)
+                .contents("lib/smartgwt-ai.jar", "**/ai.jar", null)
                 .skins("/lib/smartgwt-skins.jar", "com/smartclient/theme")
                 .skins("/lib/smartgwt-" + license.getName() + ".jar", "com/smartclient/theme");
 

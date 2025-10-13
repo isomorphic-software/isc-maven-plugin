@@ -33,7 +33,8 @@ public enum License {
     ENTERPRISE("Enterprise"),
 
     ANALYTICS_MODULE("AnalyticsModule", "analytics"),
-    MESSAGING_MODULE("RealtimeMessagingModule", "messaging");
+    MESSAGING_MODULE("RealtimeMessagingModule", "messaging"),
+    AI_MODULE("AIModule", "ai");
 
     String label;
     String name;

@@ -85,10 +85,20 @@ public abstract class AbstractPackagerMojo extends AbstractBaseMojo {
     protected Boolean includeAnalytics;
 
     /**
+     * If true, the optional AI module (bundled and distributed
+     * separately) has been licensed and should be downloaded with the
+     * distribution specified by {@link #license}.
+     *
+     * @since 1.4.7
+     */
+    @Parameter(property = "includeAI", defaultValue = "false")
+    protected Boolean includeAI;
+
+    /**
      * The date on which the Isomorphic build was made publicly available at <a
      * href
      * ="http://www.smartclient.com/builds/">http://www.smartclient.com/builds
-     * /</a>, in yyyy-MM-dd format. e.g., 2013-25-12. Used to determine both
+     * /</a>, in yyyy-MM-dd format. e.g., 2025-10-13. Used to determine both
      * remote and local file locations.
      * <br>
      * Note that if no value is provided, and {@link #skipDownload} is not true, an attempt is
@@ -104,7 +114,7 @@ public abstract class AbstractPackagerMojo extends AbstractBaseMojo {
 
     /**
      * The Isomorphic version number of the specified {@link #product}. e.g.,
-     * 9.1d, 4.0p. Used to determine both remote and local file locations.
+     * 13.1p, 15.0d. Used to determine both remote and local file locations.
      *
      * @since 1.0.0
      */
@@ -112,11 +122,12 @@ public abstract class AbstractPackagerMojo extends AbstractBaseMojo {
     protected String buildNumber;
 
     /**
-     * Typically one of: LGPL, EVAL, PRO, POWER, ENTERPRISE. Although it is also
-     * valid to specify optional modules ANALYTICS_MODULE or MESSAGING_MODULE,
-     * generally prefer the {@link #includeAnalytics} /
-     * {@link #includeMessaging} properties, respectively, to cause the optional
-     * modules to be included with the base installation / deployment.
+     * One of: LGPL, EVAL, PRO, POWER, ENTERPRISE.  As of version 1.4.7, it is no longer valid
+     * to specify optional modules like ANALYTICS_MODULE for this property.  To include
+     * optional modules ANALYTICS_MODULE, MESSAGING_MODULE or AI_MODULE, use the
+     * {@link #includeAnalytics} / {@link #includeMessaging} / {@link #includeAI} properties,
+     * respectively, to cause the optional modules to be included with the base
+     * installation / deployment.
      *
      * @since 1.0.0
      */
@@ -331,6 +342,9 @@ public abstract class AbstractPackagerMojo extends AbstractBaseMojo {
                 }
                 if (includeMessaging) {
                     licenses.add(MESSAGING_MODULE);
+                }
+                if (includeAI) {
+                    licenses.add(AI_MODULE);
                 }
             }
 
