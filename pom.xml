@@ -11,12 +11,6 @@
 
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
 
-    <parent>
-        <groupId>org.sonatype.oss</groupId>
-        <artifactId>oss-parent</artifactId>
-        <version>7</version>
-    </parent>
-
     <modelVersion>4.0.0</modelVersion>
 
     <groupId>com.isomorphic</groupId>
@@ -67,6 +61,7 @@
         <system>GitHub</system>
         <url>https://github.com/isomorphic-software/isc-maven-plugin/issues</url>
     </issueManagement>
+  	
     <scm>
         <url>https://github.com/isomorphic-software/${project.artifactId}.git</url>
         <connection>scm:git:git@github.com:isomorphic-software/${project.artifactId}.git</connection>
@@ -80,6 +75,19 @@
       	<!-- default - override on the CLI -->
       	<isc.extras.version>13.1-p20250101</isc.extras.version>
     </properties>
+
+    <distributionManagement>
+        <repository>
+            <id>central</id>
+            <name>Central Repository</name>
+            <url>https://central.sonatype.com/publish/release</url>
+        </repository>
+        <snapshotRepository>
+            <id>central</id>
+            <name>Central Snapshot Repository</name>
+            <url>https://central.sonatype.com/publish/snapshot</url>
+        </snapshotRepository>
+    </distributionManagement>	
 
     <build>
         <plugins>
@@ -172,15 +180,6 @@
                     </dependency>
                 </dependencies>
             </plugin>
-            <!--
-             Use the release plugin to tag release, bump version number, etc.
-             See plugin doc here: https://maven.apache.org/maven-release/maven-release-plugin/usage.html
-             -->
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-release-plugin</artifactId>
-                <version>3.1.1</version>
-              </plugin>
             <plugin>
                 <!-- 
                      Site should normally be re/deployed following a release, by checkout of
@@ -205,6 +204,32 @@
                             <goal>site</goal>
                         </goals>
                         <phase>site-deploy</phase>
+                    </execution>
+                </executions>
+            </plugin>
+            <!-- New publishing plugin for Maven Central -->
+            <plugin>
+                <groupId>org.sonatype.central</groupId>
+                <artifactId>central-publishing-maven-plugin</artifactId>
+                <version>0.3.0</version>
+                <extensions>true</extensions>
+                <configuration>
+                <publishingServerId>central</publishingServerId>
+                </configuration>
+            </plugin>
+
+            <!-- Required for signing -->
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-gpg-plugin</artifactId>
+                <version>3.2.4</version>
+                <executions>
+                    <execution>
+                        <id>sign-artifacts</id>
+                        <phase>verify</phase>
+                        <goals>
+                        <goal>sign</goal>
+                        </goals>
                     </execution>
                 </executions>
             </plugin>
