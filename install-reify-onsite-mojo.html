@@ -8,7 +8,7 @@
 
 	<head>
 		<meta charset="UTF-8" />
-		<title>Isomorphic Software Maven Plugin &#x2013; isc:download</title>
+		<title>Isomorphic Software Maven Plugin &#x2013; isc:install-reify-onsite</title>
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<meta name="description" content="" />
 		<meta http-equiv="content-language" content="en" />
@@ -33,7 +33,7 @@
 
 	</head>
 
-	<body class="page-download-mojo project-isc-maven-plugin" data-spy="scroll" data-offset="60" data-target="#toc-scroll-target">
+	<body class="page-install-reify-onsite-mojo project-isc-maven-plugin" data-spy="scroll" data-offset="60" data-target="#toc-scroll-target">
 
 		<div class="navbar navbar-fixed-top">
 			<div class="navbar-inner">
@@ -102,14 +102,17 @@
 		<div class="span12">
 			<div class="body-content">
 <section> 
- <a name="isc:download"></a> 
+ <a name="isc:install-reify-onsite"></a> 
  <div class="page-header">
-  <h2 id="isc:download">isc:download</h2>
+  <h2 id="isc:install-reify-onsite">isc:install-reify-onsite</h2>
  </div> 
  <p><strong>Full name</strong>:</p> 
- <p>com.isomorphic:isc-maven-plugin:1.5.0:download</p> 
+ <p>com.isomorphic:isc-maven-plugin:1.5.0:install-reify-onsite</p> 
  <p><strong>Description</strong>:</p> 
- <p>Downloads and unpacks a given distribution, but does not actually do anything with the resulting Maven artifacts.</p> 
+ <p>Downloads and unpacks a Reify OnSite distribution and deploys it to <code>targetDir</code> 
+  <!-- no javadoc sites associated -->. Note that the current version of this goal only supports installing the SmartClient version of Reify OnSite. Isomorphic does also provide a version of Reify OnSite packaged as a SmartGWT application, but that is outside the scope of this plugin. </p> 
+ <p>Note that Reify OnSite is NOT a Maven project, This goal installs the actual product in the target directory you specify; it does not install files to any Maven cache or repository.</p> 
+ <p></p> 
  <p><strong>Attributes</strong>:</p> 
  <ul> 
   <li>Executes by direct invocation only.</li> 
@@ -133,6 +136,15 @@
      <td>The Isomorphic version number of the specified <code>com.isomorphic.maven.mojo.AbstractPackagerMojo.product</code> 
       <!-- no javadoc sites associated -->. e.g., 13.1p, 15.0d. Used to determine both remote and local file locations.<br /><strong>User Property</strong>: <code>buildNumber</code></td> 
     </tr> 
+    <tr class="a"> 
+     <td><a href="#targetDir"><code>&lt;targetDir&gt;</code></a></td> 
+     <td><code>String</code></td> 
+     <td><code>1.5.0</code></td> 
+     <td>Path to the directory where Reify OnSite should be installed. By default, this directory will be created if necessary - see <code>createDir</code> 
+      <!-- no javadoc sites associated -->. If the target directory already exists and is not empty, by default this goal will fail - see <code>overwriteTarget</code> 
+      <!-- no javadoc sites associated --> <p>As described in the <code>standalone</code> 
+       <!-- no javadoc sites associated --> property docs, Reify OnSite can run standalone or as a regular webapp. If you are running standalone (the default), you can deploy to any target directory you like. If you are deploying as a regular webapp in an existing server, the targetDir MUST be the directory configured as the context root in your servlet container - for example, in Tomcat it should be &quot;tomcat/webapps/ROOT&quot;, in other servlet engines you often configure it with a <code>&lt;context-root&gt;</code> tag or similar. This is because Reify OnSite is literally the exact same code running at <code>https://create.reify.com</code>, including the automatic redirecting we do for authentication, so it expects to be running in the context root and will fail if you try to run it elsewhere.</p><br /><strong>User Property</strong>: <code>targetDir</code></td> 
+    </tr> 
    </tbody> 
   </table> 
  </section> 
@@ -155,31 +167,43 @@
       <!-- no javadoc sites associated --> is not true, an attempt is made to discover the date of the latest distribution currently published to the Isomorphic build server. <br /><b>Default value is</b>: <code>The date of the most recent distribution (with caveats)</code>.<br /><strong>User Property</strong>: <code>buildDate</code></td> 
     </tr> 
     <tr class="a"> 
-     <td><a href="#includeAnI"><code>&lt;includeAnI&gt;</code></a></td> 
+     <td><a href="#createDir"><code>&lt;createDir&gt;</code></a></td> 
      <td><code>Boolean</code></td> 
-     <td><code>1.4.7</code></td> 
-     <td>If true, the optional AI module (bundled and distributed separately) has been licensed and should be downloaded with the distribution specified by <code>license</code> 
-      <!-- no javadoc sites associated -->.<br /><strong>Default</strong>: <code>false</code><br /><strong>User Property</strong>: <code>includeAI</code></td> 
+     <td><code>1.5.0</code></td> 
+     <td>If the <code>targetDir</code> 
+      <!-- no javadoc sites associated --> does not exist, should we create it automatically, including any parent directories necessary? Defaults to true<br /><strong>Default</strong>: <code>true</code><br /><strong>User Property</strong>: <code>createDir</code></td> 
     </tr> 
     <tr class="b"> 
-     <td><a href="#includeAnalytics"><code>&lt;includeAnalytics&gt;</code></a></td> 
-     <td><code>Boolean</code></td> 
+     <td><a href="#license"><code>&lt;license&gt;</code></a></td> 
+     <td><code>License</code></td> 
      <td><code>1.0.0</code></td> 
-     <td>If true, the optional analytics module (bundled and distributed separately) has been licensed and should be downloaded with the distribution specified by <code>license</code> 
-      <!-- no javadoc sites associated -->.<br /><strong>Default</strong>: <code>false</code><br /><strong>User Property</strong>: <code>includeAnalytics</code></td> 
+     <td>Technically the license should be &quot;ENTERPRISE&quot;, but there is no need to specify it (and indeed it will be ignored if you do). ENTERPRISE is implied for the Reify OnSite goals, so we force it to that setting<br /><strong>Default</strong>: <code>ENTERPRISE</code><br /><strong>User Property</strong>: <code>license</code></td> 
     </tr> 
     <tr class="a"> 
-     <td><a href="#includeMessaging"><code>&lt;includeMessaging&gt;</code></a></td> 
-     <td><code>Boolean</code></td> 
-     <td><code>1.0.0</code></td> 
-     <td>If true, the optional messaging module (bundled and distributed separately) has been licensed and should be downloaded with the distribution specified by <code>license</code> 
-      <!-- no javadoc sites associated -->.<br /><strong>Default</strong>: <code>false</code><br /><strong>User Property</strong>: <code>includeMessaging</code></td> 
-    </tr> 
-    <tr class="b"> 
      <td><a href="#overwrite"><code>&lt;overwrite&gt;</code></a></td> 
      <td><code>Boolean</code></td> 
      <td><code>1.0.0</code></td> 
      <td>If true, any file previously downloaded / unpacked will be overwritten with this execution. Useful in the case of an interrupted download. Note that this setting has no effect on unzip operations.<br /><strong>Default</strong>: <code>false</code><br /><strong>User Property</strong>: <code>overwrite</code></td> 
+    </tr> 
+    <tr class="b"> 
+     <td><a href="#overwriteTarget"><code>&lt;overwriteTarget&gt;</code></a></td> 
+     <td><code>Boolean</code></td> 
+     <td><code>1.5.0</code></td> 
+     <td>If the <code>targetDir</code> 
+      <!-- no javadoc sites associated --> already exists and is not empty, should we proceed anyway? By default, the goal will fail<br /><strong>Default</strong>: <code>false</code><br /><strong>User Property</strong>: <code>overwriteTarget</code></td> 
+    </tr> 
+    <tr class="a"> 
+     <td><a href="#port"><code>&lt;port&gt;</code></a></td> 
+     <td><code>String</code></td> 
+     <td><code>1.5.0</code></td> 
+     <td>The HTTP port that Reify OnSite should listen on, in <code>standalone</code> 
+      <!-- no javadoc sites associated --> mode. Defaults to &quot;8080&quot;. Ignored if we are not installing in standalone mode<br /><strong>Default</strong>: <code>8080</code><br /><strong>User Property</strong>: <code>port</code></td> 
+    </tr> 
+    <tr class="b"> 
+     <td><a href="#product"><code>&lt;product&gt;</code></a></td> 
+     <td><code>Product</code></td> 
+     <td><code>1.0.0</code></td> 
+     <td>Technically the product should be &quot;REIFY_ONSITE&quot;, but there is no need to specify it (and indeed it will be ignored if you do). REIFY_ONSITE is implied for the Reify OnSite goals, so we force it to that setting<br /><strong>Default</strong>: <code>REIFY_ONSITE</code><br /><strong>User Property</strong>: <code>product</code></td> 
     </tr> 
     <tr class="a"> 
      <td><a href="#serverId"><code>&lt;serverId&gt;</code></a></td> 
@@ -188,6 +212,12 @@
      <td>The id of a <a href="http://maven.apache.org/settings.html#Servers">server configuration</a> containing authentication credentials for the smartclient.com website, used to download licensed products. <p>Not strictly necessary for unprotected (LGPL) distributions.</p><br /><strong>Default</strong>: <code>smartclient-developer</code><br /><strong>User Property</strong>: <code>serverId</code></td> 
     </tr> 
     <tr class="b"> 
+     <td><a href="#skins"><code>&lt;skins&gt;</code></a></td> 
+     <td><code>String</code></td> 
+     <td><code>1.5.0</code></td> 
+     <td>Limits the skins installed with Reify OnSite to the names in this comma-separated list. E.g., <code>-Dskins=Tahoe,Stratus</code> will remove all skins except Tahoe and Stratus (plus a couple that are always installed because various parts of the system expect them to be present)<br /><strong>User Property</strong>: <code>skins</code></td> 
+    </tr> 
+    <tr class="a"> 
      <td><a href="#skipDownload"><code>&lt;skipDownload&gt;</code></a></td> 
      <td><code>Boolean</code></td> 
      <td><code>1.0.0</code></td> 
@@ -205,6 +235,13 @@
         <!-- no javadoc sites associated --></li> 
        <li>&quot;zip&quot;</li> 
       </ul><br /><strong>Default</strong>: <code>false</code><br /><strong>User Property</strong>: <code>skipDownload</code></td> 
+    </tr> 
+    <tr class="b"> 
+     <td><a href="#standalone"><code>&lt;standalone&gt;</code></a></td> 
+     <td><code>Boolean</code></td> 
+     <td><code>1.5.0</code></td> 
+     <td>Reify OnSite bundles an embedded version of Tomcat which enables it to run standalone with a simple CLI command. It can also be installed as a regular webapp under an existing installation of Tomcat (or whatever other servlet engine you wish to use). By default we install for standalone use; if you do not intend to run standalone, set standalone=false and the plugin will not deploy the standalone elements (but also read the important proviso about restrictions on <code>targetDir</code> 
+      <!-- no javadoc sites associated --> when not running in standalone mode)<br /><strong>Default</strong>: <code>true</code><br /><strong>User Property</strong>: <code>standalone</code></td> 
     </tr> 
     <tr class="a"> 
      <td><a href="#workdir"><code>&lt;workdir&gt;</code></a></td> 
@@ -257,57 +294,37 @@
    </ul> 
    <hr /> 
   </section> 
-  <a name="includeAnI"></a> 
+  <a name="createDir"></a> 
   <section> 
-   <a name="aincludeAnI"></a> 
-   <h4 id="a.3CincludeAnI.3E">&lt;includeAnI&gt;</h4> 
+   <a name="acreateDir"></a> 
+   <h4 id="a.3CcreateDir.3E">&lt;createDir&gt;</h4> 
    <div>
-     If true, the optional AI module (bundled and distributed separately) has been licensed and should be downloaded with the distribution specified by 
-    <code>license</code> 
-    <!-- no javadoc sites associated -->. 
+     If the 
+    <code>targetDir</code> 
+    <!-- no javadoc sites associated --> does not exist, should we create it automatically, including any parent directories necessary? Defaults to true 
    </div> 
    <ul> 
     <li><strong>Type</strong>: <code>java.lang.Boolean</code></li> 
-    <li><strong>Since</strong>: <code>1.4.7</code></li> 
+    <li><strong>Since</strong>: <code>1.5.0</code></li> 
     <li><strong>Required</strong>: <code>No</code></li> 
-    <li><strong>User Property</strong>: <code>includeAI</code></li> 
-    <li><strong>Default</strong>: <code>false</code></li> 
+    <li><strong>User Property</strong>: <code>createDir</code></li> 
+    <li><strong>Default</strong>: <code>true</code></li> 
    </ul> 
    <hr /> 
   </section> 
-  <a name="includeAnalytics"></a> 
+  <a name="license"></a> 
   <section> 
-   <a name="aincludeAnalytics"></a> 
-   <h4 id="a.3CincludeAnalytics.3E">&lt;includeAnalytics&gt;</h4> 
+   <a name="alicense"></a> 
+   <h4 id="a.3Clicense.3E">&lt;license&gt;</h4> 
    <div>
-     If true, the optional analytics module (bundled and distributed separately) has been licensed and should be downloaded with the distribution specified by 
-    <code>license</code> 
-    <!-- no javadoc sites associated -->. 
+     Technically the license should be &quot;ENTERPRISE&quot;, but there is no need to specify it (and indeed it will be ignored if you do). ENTERPRISE is implied for the Reify OnSite goals, so we force it to that setting 
    </div> 
    <ul> 
-    <li><strong>Type</strong>: <code>java.lang.Boolean</code></li> 
+    <li><strong>Type</strong>: <code>com.isomorphic.maven.packaging.License</code></li> 
     <li><strong>Since</strong>: <code>1.0.0</code></li> 
     <li><strong>Required</strong>: <code>No</code></li> 
-    <li><strong>User Property</strong>: <code>includeAnalytics</code></li> 
-    <li><strong>Default</strong>: <code>false</code></li> 
-   </ul> 
-   <hr /> 
-  </section> 
-  <a name="includeMessaging"></a> 
-  <section> 
-   <a name="aincludeMessaging"></a> 
-   <h4 id="a.3CincludeMessaging.3E">&lt;includeMessaging&gt;</h4> 
-   <div>
-     If true, the optional messaging module (bundled and distributed separately) has been licensed and should be downloaded with the distribution specified by 
-    <code>license</code> 
-    <!-- no javadoc sites associated -->. 
-   </div> 
-   <ul> 
-    <li><strong>Type</strong>: <code>java.lang.Boolean</code></li> 
-    <li><strong>Since</strong>: <code>1.0.0</code></li> 
-    <li><strong>Required</strong>: <code>No</code></li> 
-    <li><strong>User Property</strong>: <code>includeMessaging</code></li> 
-    <li><strong>Default</strong>: <code>false</code></li> 
+    <li><strong>User Property</strong>: <code>license</code></li> 
+    <li><strong>Default</strong>: <code>ENTERPRISE</code></li> 
    </ul> 
    <hr /> 
   </section> 
@@ -327,6 +344,58 @@
    </ul> 
    <hr /> 
   </section> 
+  <a name="overwriteTarget"></a> 
+  <section> 
+   <a name="aoverwriteTarget"></a> 
+   <h4 id="a.3CoverwriteTarget.3E">&lt;overwriteTarget&gt;</h4> 
+   <div>
+     If the 
+    <code>targetDir</code> 
+    <!-- no javadoc sites associated --> already exists and is not empty, should we proceed anyway? By default, the goal will fail 
+   </div> 
+   <ul> 
+    <li><strong>Type</strong>: <code>java.lang.Boolean</code></li> 
+    <li><strong>Since</strong>: <code>1.5.0</code></li> 
+    <li><strong>Required</strong>: <code>No</code></li> 
+    <li><strong>User Property</strong>: <code>overwriteTarget</code></li> 
+    <li><strong>Default</strong>: <code>false</code></li> 
+   </ul> 
+   <hr /> 
+  </section> 
+  <a name="port"></a> 
+  <section> 
+   <a name="aport"></a> 
+   <h4 id="a.3Cport.3E">&lt;port&gt;</h4> 
+   <div>
+     The HTTP port that Reify OnSite should listen on, in 
+    <code>standalone</code> 
+    <!-- no javadoc sites associated --> mode. Defaults to &quot;8080&quot;. Ignored if we are not installing in standalone mode 
+   </div> 
+   <ul> 
+    <li><strong>Type</strong>: <code>java.lang.String</code></li> 
+    <li><strong>Since</strong>: <code>1.5.0</code></li> 
+    <li><strong>Required</strong>: <code>No</code></li> 
+    <li><strong>User Property</strong>: <code>port</code></li> 
+    <li><strong>Default</strong>: <code>8080</code></li> 
+   </ul> 
+   <hr /> 
+  </section> 
+  <a name="product"></a> 
+  <section> 
+   <a name="aproduct"></a> 
+   <h4 id="a.3Cproduct.3E">&lt;product&gt;</h4> 
+   <div>
+     Technically the product should be &quot;REIFY_ONSITE&quot;, but there is no need to specify it (and indeed it will be ignored if you do). REIFY_ONSITE is implied for the Reify OnSite goals, so we force it to that setting 
+   </div> 
+   <ul> 
+    <li><strong>Type</strong>: <code>com.isomorphic.maven.packaging.Product</code></li> 
+    <li><strong>Since</strong>: <code>1.0.0</code></li> 
+    <li><strong>Required</strong>: <code>No</code></li> 
+    <li><strong>User Property</strong>: <code>product</code></li> 
+    <li><strong>Default</strong>: <code>REIFY_ONSITE</code></li> 
+   </ul> 
+   <hr /> 
+  </section> 
   <a name="serverId"></a> 
   <section> 
    <a name="aserverId"></a> 
@@ -342,6 +411,22 @@
     <li><strong>Required</strong>: <code>No</code></li> 
     <li><strong>User Property</strong>: <code>serverId</code></li> 
     <li><strong>Default</strong>: <code>smartclient-developer</code></li> 
+   </ul> 
+   <hr /> 
+  </section> 
+  <a name="skins"></a> 
+  <section> 
+   <a name="askins"></a> 
+   <h4 id="a.3Cskins.3E">&lt;skins&gt;</h4> 
+   <div>
+     Limits the skins installed with Reify OnSite to the names in this comma-separated list. E.g., 
+    <code>-Dskins=Tahoe,Stratus</code> will remove all skins except Tahoe and Stratus (plus a couple that are always installed because various parts of the system expect them to be present) 
+   </div> 
+   <ul> 
+    <li><strong>Type</strong>: <code>java.lang.String</code></li> 
+    <li><strong>Since</strong>: <code>1.5.0</code></li> 
+    <li><strong>Required</strong>: <code>No</code></li> 
+    <li><strong>User Property</strong>: <code>skins</code></li> 
    </ul> 
    <hr /> 
   </section> 
@@ -371,6 +456,45 @@
     <li><strong>Required</strong>: <code>No</code></li> 
     <li><strong>User Property</strong>: <code>skipDownload</code></li> 
     <li><strong>Default</strong>: <code>false</code></li> 
+   </ul> 
+   <hr /> 
+  </section> 
+  <a name="standalone"></a> 
+  <section> 
+   <a name="astandalone"></a> 
+   <h4 id="a.3Cstandalone.3E">&lt;standalone&gt;</h4> 
+   <div>
+     Reify OnSite bundles an embedded version of Tomcat which enables it to run standalone with a simple CLI command. It can also be installed as a regular webapp under an existing installation of Tomcat (or whatever other servlet engine you wish to use). By default we install for standalone use; if you do not intend to run standalone, set standalone=false and the plugin will not deploy the standalone elements (but also read the important proviso about restrictions on 
+    <code>targetDir</code> 
+    <!-- no javadoc sites associated --> when not running in standalone mode) 
+   </div> 
+   <ul> 
+    <li><strong>Type</strong>: <code>java.lang.Boolean</code></li> 
+    <li><strong>Since</strong>: <code>1.5.0</code></li> 
+    <li><strong>Required</strong>: <code>No</code></li> 
+    <li><strong>User Property</strong>: <code>standalone</code></li> 
+    <li><strong>Default</strong>: <code>true</code></li> 
+   </ul> 
+   <hr /> 
+  </section> 
+  <a name="targetDir"></a> 
+  <section> 
+   <a name="atargetDir"></a> 
+   <h4 id="a.3CtargetDir.3E">&lt;targetDir&gt;</h4> 
+   <div>
+     Path to the directory where Reify OnSite should be installed. By default, this directory will be created if necessary - see 
+    <code>createDir</code> 
+    <!-- no javadoc sites associated -->. If the target directory already exists and is not empty, by default this goal will fail - see 
+    <code>overwriteTarget</code> 
+    <!-- no javadoc sites associated --> 
+    <p>As described in the <code>standalone</code> 
+     <!-- no javadoc sites associated --> property docs, Reify OnSite can run standalone or as a regular webapp. If you are running standalone (the default), you can deploy to any target directory you like. If you are deploying as a regular webapp in an existing server, the targetDir MUST be the directory configured as the context root in your servlet container - for example, in Tomcat it should be &quot;tomcat/webapps/ROOT&quot;, in other servlet engines you often configure it with a <code>&lt;context-root&gt;</code> tag or similar. This is because Reify OnSite is literally the exact same code running at <code>https://create.reify.com</code>, including the automatic redirecting we do for authentication, so it expects to be running in the context root and will fail if you try to run it elsewhere.</p> 
+   </div> 
+   <ul> 
+    <li><strong>Type</strong>: <code>java.lang.String</code></li> 
+    <li><strong>Since</strong>: <code>1.5.0</code></li> 
+    <li><strong>Required</strong>: <code>Yes</code></li> 
+    <li><strong>User Property</strong>: <code>targetDir</code></li> 
    </ul> 
    <hr /> 
   </section> 

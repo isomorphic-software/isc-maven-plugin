@@ -8,7 +8,7 @@
 
 	<head>
 		<meta charset="UTF-8" />
-		<title>Isomorphic Software Maven Plugin &#x2013; isc:download</title>
+		<title>Isomorphic Software Maven Plugin &#x2013; isc:upgrade-reify-onsite</title>
 		<meta name="viewport" content="width=device-width, initial-scale=1.0" />
 		<meta name="description" content="" />
 		<meta http-equiv="content-language" content="en" />
@@ -33,7 +33,7 @@
 
 	</head>
 
-	<body class="page-download-mojo project-isc-maven-plugin" data-spy="scroll" data-offset="60" data-target="#toc-scroll-target">
+	<body class="page-upgrade-reify-onsite-mojo project-isc-maven-plugin" data-spy="scroll" data-offset="60" data-target="#toc-scroll-target">
 
 		<div class="navbar navbar-fixed-top">
 			<div class="navbar-inner">
@@ -102,14 +102,17 @@
 		<div class="span12">
 			<div class="body-content">
 <section> 
- <a name="isc:download"></a> 
+ <a name="isc:upgrade-reify-onsite"></a> 
  <div class="page-header">
-  <h2 id="isc:download">isc:download</h2>
+  <h2 id="isc:upgrade-reify-onsite">isc:upgrade-reify-onsite</h2>
  </div> 
  <p><strong>Full name</strong>:</p> 
- <p>com.isomorphic:isc-maven-plugin:1.5.0:download</p> 
+ <p>com.isomorphic:isc-maven-plugin:1.5.0:upgrade-reify-onsite</p> 
  <p><strong>Description</strong>:</p> 
- <p>Downloads and unpacks a given distribution, but does not actually do anything with the resulting Maven artifacts.</p> 
+ <p>Downloads and unpacks a Reify OnSite distribution and uses it to upgrade the existing Reify OnSite deployment at <code>targetDir</code> 
+  <!-- no javadoc sites associated --> without affecting your settings or data. Note that the current version of this goal only supports the SmartClient version of Reify OnSite. Isomorphic does also provide a version of Reify OnSite packaged as a SmartGWT application, but that is outside the scope of this plugin. </p> 
+ <p>Note that Reify OnSite is NOT a Maven project, This goal upgrades the actual product in the target directory you specify; it does not install files to any Maven cache or repository.</p> 
+ <p></p> 
  <p><strong>Attributes</strong>:</p> 
  <ul> 
   <li>Executes by direct invocation only.</li> 
@@ -133,6 +136,12 @@
      <td>The Isomorphic version number of the specified <code>com.isomorphic.maven.mojo.AbstractPackagerMojo.product</code> 
       <!-- no javadoc sites associated -->. e.g., 13.1p, 15.0d. Used to determine both remote and local file locations.<br /><strong>User Property</strong>: <code>buildNumber</code></td> 
     </tr> 
+    <tr class="a"> 
+     <td><a href="#targetDir"><code>&lt;targetDir&gt;</code></a></td> 
+     <td><code>String</code></td> 
+     <td><code>1.5.0</code></td> 
+     <td>Path to an existing installation of Reify OnSite. If the directory does not exist, or does not contain an installation of Reify OnSite, this goal will fail.<br /><strong>User Property</strong>: <code>targetDir</code></td> 
+    </tr> 
    </tbody> 
   </table> 
  </section> 
@@ -155,25 +164,10 @@
       <!-- no javadoc sites associated --> is not true, an attempt is made to discover the date of the latest distribution currently published to the Isomorphic build server. <br /><b>Default value is</b>: <code>The date of the most recent distribution (with caveats)</code>.<br /><strong>User Property</strong>: <code>buildDate</code></td> 
     </tr> 
     <tr class="a"> 
-     <td><a href="#includeAnI"><code>&lt;includeAnI&gt;</code></a></td> 
-     <td><code>Boolean</code></td> 
-     <td><code>1.4.7</code></td> 
-     <td>If true, the optional AI module (bundled and distributed separately) has been licensed and should be downloaded with the distribution specified by <code>license</code> 
-      <!-- no javadoc sites associated -->.<br /><strong>Default</strong>: <code>false</code><br /><strong>User Property</strong>: <code>includeAI</code></td> 
-    </tr> 
-    <tr class="b"> 
-     <td><a href="#includeAnalytics"><code>&lt;includeAnalytics&gt;</code></a></td> 
-     <td><code>Boolean</code></td> 
+     <td><a href="#license"><code>&lt;license&gt;</code></a></td> 
+     <td><code>License</code></td> 
      <td><code>1.0.0</code></td> 
-     <td>If true, the optional analytics module (bundled and distributed separately) has been licensed and should be downloaded with the distribution specified by <code>license</code> 
-      <!-- no javadoc sites associated -->.<br /><strong>Default</strong>: <code>false</code><br /><strong>User Property</strong>: <code>includeAnalytics</code></td> 
-    </tr> 
-    <tr class="a"> 
-     <td><a href="#includeMessaging"><code>&lt;includeMessaging&gt;</code></a></td> 
-     <td><code>Boolean</code></td> 
-     <td><code>1.0.0</code></td> 
-     <td>If true, the optional messaging module (bundled and distributed separately) has been licensed and should be downloaded with the distribution specified by <code>license</code> 
-      <!-- no javadoc sites associated -->.<br /><strong>Default</strong>: <code>false</code><br /><strong>User Property</strong>: <code>includeMessaging</code></td> 
+     <td>Technically the license should be &quot;ENTERPRISE&quot;, but there is no need to specify it (and indeed it will be ignored if you do). ENTERPRISE is implied for the Reify OnSite goals, so we force it to that setting<br /><strong>Default</strong>: <code>ENTERPRISE</code><br /><strong>User Property</strong>: <code>license</code></td> 
     </tr> 
     <tr class="b"> 
      <td><a href="#overwrite"><code>&lt;overwrite&gt;</code></a></td> 
@@ -182,10 +176,22 @@
      <td>If true, any file previously downloaded / unpacked will be overwritten with this execution. Useful in the case of an interrupted download. Note that this setting has no effect on unzip operations.<br /><strong>Default</strong>: <code>false</code><br /><strong>User Property</strong>: <code>overwrite</code></td> 
     </tr> 
     <tr class="a"> 
+     <td><a href="#product"><code>&lt;product&gt;</code></a></td> 
+     <td><code>Product</code></td> 
+     <td><code>1.0.0</code></td> 
+     <td>Technically the product should be &quot;REIFY_ONSITE&quot;, but there is no need to specify it (and indeed it will be ignored if you do). REIFY_ONSITE is implied for the Reify OnSite goals, so we force it to that setting<br /><strong>Default</strong>: <code>REIFY_ONSITE</code><br /><strong>User Property</strong>: <code>product</code></td> 
+    </tr> 
+    <tr class="b"> 
      <td><a href="#serverId"><code>&lt;serverId&gt;</code></a></td> 
      <td><code>String</code></td> 
      <td><code>1.0.0</code></td> 
      <td>The id of a <a href="http://maven.apache.org/settings.html#Servers">server configuration</a> containing authentication credentials for the smartclient.com website, used to download licensed products. <p>Not strictly necessary for unprotected (LGPL) distributions.</p><br /><strong>Default</strong>: <code>smartclient-developer</code><br /><strong>User Property</strong>: <code>serverId</code></td> 
+    </tr> 
+    <tr class="a"> 
+     <td><a href="#skins"><code>&lt;skins&gt;</code></a></td> 
+     <td><code>String</code></td> 
+     <td><code>1.5.0</code></td> 
+     <td>By default, this goal upgrades just the skins it finds installed in the existing installation it is upgrading. If you would like the upgrade to also install additional skins from the downloaded package, name them in this parameter. So, if the existing installation contains skins Enterprise, Stratus and ToolSkin, and you set this parameter like <code>-Dskins=Tahoe,Obsidian</code>, the Reify Online installation will have five upgraded skins after the goal completes: Enterprise, Stratus, ToolSkin, Tahoe and Obsidian.<br /><strong>User Property</strong>: <code>skins</code></td> 
     </tr> 
     <tr class="b"> 
      <td><a href="#skipDownload"><code>&lt;skipDownload&gt;</code></a></td> 
@@ -257,57 +263,19 @@
    </ul> 
    <hr /> 
   </section> 
-  <a name="includeAnI"></a> 
+  <a name="license"></a> 
   <section> 
-   <a name="aincludeAnI"></a> 
-   <h4 id="a.3CincludeAnI.3E">&lt;includeAnI&gt;</h4> 
+   <a name="alicense"></a> 
+   <h4 id="a.3Clicense.3E">&lt;license&gt;</h4> 
    <div>
-     If true, the optional AI module (bundled and distributed separately) has been licensed and should be downloaded with the distribution specified by 
-    <code>license</code> 
-    <!-- no javadoc sites associated -->. 
+     Technically the license should be &quot;ENTERPRISE&quot;, but there is no need to specify it (and indeed it will be ignored if you do). ENTERPRISE is implied for the Reify OnSite goals, so we force it to that setting 
    </div> 
    <ul> 
-    <li><strong>Type</strong>: <code>java.lang.Boolean</code></li> 
-    <li><strong>Since</strong>: <code>1.4.7</code></li> 
-    <li><strong>Required</strong>: <code>No</code></li> 
-    <li><strong>User Property</strong>: <code>includeAI</code></li> 
-    <li><strong>Default</strong>: <code>false</code></li> 
-   </ul> 
-   <hr /> 
-  </section> 
-  <a name="includeAnalytics"></a> 
-  <section> 
-   <a name="aincludeAnalytics"></a> 
-   <h4 id="a.3CincludeAnalytics.3E">&lt;includeAnalytics&gt;</h4> 
-   <div>
-     If true, the optional analytics module (bundled and distributed separately) has been licensed and should be downloaded with the distribution specified by 
-    <code>license</code> 
-    <!-- no javadoc sites associated -->. 
-   </div> 
-   <ul> 
-    <li><strong>Type</strong>: <code>java.lang.Boolean</code></li> 
+    <li><strong>Type</strong>: <code>com.isomorphic.maven.packaging.License</code></li> 
     <li><strong>Since</strong>: <code>1.0.0</code></li> 
     <li><strong>Required</strong>: <code>No</code></li> 
-    <li><strong>User Property</strong>: <code>includeAnalytics</code></li> 
-    <li><strong>Default</strong>: <code>false</code></li> 
-   </ul> 
-   <hr /> 
-  </section> 
-  <a name="includeMessaging"></a> 
-  <section> 
-   <a name="aincludeMessaging"></a> 
-   <h4 id="a.3CincludeMessaging.3E">&lt;includeMessaging&gt;</h4> 
-   <div>
-     If true, the optional messaging module (bundled and distributed separately) has been licensed and should be downloaded with the distribution specified by 
-    <code>license</code> 
-    <!-- no javadoc sites associated -->. 
-   </div> 
-   <ul> 
-    <li><strong>Type</strong>: <code>java.lang.Boolean</code></li> 
-    <li><strong>Since</strong>: <code>1.0.0</code></li> 
-    <li><strong>Required</strong>: <code>No</code></li> 
-    <li><strong>User Property</strong>: <code>includeMessaging</code></li> 
-    <li><strong>Default</strong>: <code>false</code></li> 
+    <li><strong>User Property</strong>: <code>license</code></li> 
+    <li><strong>Default</strong>: <code>ENTERPRISE</code></li> 
    </ul> 
    <hr /> 
   </section> 
@@ -327,6 +295,22 @@
    </ul> 
    <hr /> 
   </section> 
+  <a name="product"></a> 
+  <section> 
+   <a name="aproduct"></a> 
+   <h4 id="a.3Cproduct.3E">&lt;product&gt;</h4> 
+   <div>
+     Technically the product should be &quot;REIFY_ONSITE&quot;, but there is no need to specify it (and indeed it will be ignored if you do). REIFY_ONSITE is implied for the Reify OnSite goals, so we force it to that setting 
+   </div> 
+   <ul> 
+    <li><strong>Type</strong>: <code>com.isomorphic.maven.packaging.Product</code></li> 
+    <li><strong>Since</strong>: <code>1.0.0</code></li> 
+    <li><strong>Required</strong>: <code>No</code></li> 
+    <li><strong>User Property</strong>: <code>product</code></li> 
+    <li><strong>Default</strong>: <code>REIFY_ONSITE</code></li> 
+   </ul> 
+   <hr /> 
+  </section> 
   <a name="serverId"></a> 
   <section> 
    <a name="aserverId"></a> 
@@ -342,6 +326,22 @@
     <li><strong>Required</strong>: <code>No</code></li> 
     <li><strong>User Property</strong>: <code>serverId</code></li> 
     <li><strong>Default</strong>: <code>smartclient-developer</code></li> 
+   </ul> 
+   <hr /> 
+  </section> 
+  <a name="skins"></a> 
+  <section> 
+   <a name="askins"></a> 
+   <h4 id="a.3Cskins.3E">&lt;skins&gt;</h4> 
+   <div>
+     By default, this goal upgrades just the skins it finds installed in the existing installation it is upgrading. If you would like the upgrade to also install additional skins from the downloaded package, name them in this parameter. So, if the existing installation contains skins Enterprise, Stratus and ToolSkin, and you set this parameter like 
+    <code>-Dskins=Tahoe,Obsidian</code>, the Reify Online installation will have five upgraded skins after the goal completes: Enterprise, Stratus, ToolSkin, Tahoe and Obsidian. 
+   </div> 
+   <ul> 
+    <li><strong>Type</strong>: <code>java.lang.String</code></li> 
+    <li><strong>Since</strong>: <code>1.5.0</code></li> 
+    <li><strong>Required</strong>: <code>No</code></li> 
+    <li><strong>User Property</strong>: <code>skins</code></li> 
    </ul> 
    <hr /> 
   </section> 
@@ -371,6 +371,21 @@
     <li><strong>Required</strong>: <code>No</code></li> 
     <li><strong>User Property</strong>: <code>skipDownload</code></li> 
     <li><strong>Default</strong>: <code>false</code></li> 
+   </ul> 
+   <hr /> 
+  </section> 
+  <a name="targetDir"></a> 
+  <section> 
+   <a name="atargetDir"></a> 
+   <h4 id="a.3CtargetDir.3E">&lt;targetDir&gt;</h4> 
+   <div>
+     Path to an existing installation of Reify OnSite. If the directory does not exist, or does not contain an installation of Reify OnSite, this goal will fail. 
+   </div> 
+   <ul> 
+    <li><strong>Type</strong>: <code>java.lang.String</code></li> 
+    <li><strong>Since</strong>: <code>1.5.0</code></li> 
+    <li><strong>Required</strong>: <code>Yes</code></li> 
+    <li><strong>User Property</strong>: <code>targetDir</code></li> 
    </ul> 
    <hr /> 
   </section> 
