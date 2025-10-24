@@ -23,9 +23,12 @@ import com.isomorphic.maven.packaging.Module;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Mojo;
+import org.apache.maven.plugins.annotations.Parameter;
 import org.eclipse.aether.artifact.Artifact;
 import org.eclipse.aether.installation.InstallRequest;
 import org.eclipse.aether.installation.InstallationException;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 
 import java.util.Set;
 
@@ -36,7 +39,9 @@ import java.util.Set;
  * Refer to <a href="http://maven.apache.org/plugins/maven-install-plugin/install-file-mojo.html"></a>
  */
 @Mojo(name="install", requiresProject=false)
-public final class InstallMojo extends AbstractPackagerMojo {
+public final class InstallMojo extends AbstractCoreMavenGoalsMojo {
+
+    private static final Logger log = LoggerFactory.getLogger(InstallMojo.class);
 
     /**
      * Install each of the provided {@link Module}s, along with their SubArtifacts (POMs, JavaDoc bundle, etc.), to a local repository.

@@ -15,7 +15,7 @@
 
     <groupId>com.isomorphic</groupId>
     <artifactId>isc-maven-plugin</artifactId>
-    <version>1.4.7</version>
+    <version>1.5.0</version>
     <packaging>maven-plugin</packaging>
 
     <name>isc-maven-plugin</name>
@@ -141,7 +141,16 @@
                 <version>3.13.0</version>
 				<configuration>
 					<release>8</release>
-				</configuration>            </plugin>
+                    <!-- Force correct annotations version -->
+                    <annotationProcessorPaths>
+                        <path>
+                            <groupId>org.apache.maven.plugin-tools</groupId>
+                            <artifactId>maven-plugin-annotations</artifactId>
+                            <version>3.9.0</version>
+                        </path>
+                    </annotationProcessorPaths>
+                </configuration>
+            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-javadoc-plugin</artifactId>

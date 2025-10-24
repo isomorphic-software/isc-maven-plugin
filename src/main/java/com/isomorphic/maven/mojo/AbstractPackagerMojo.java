@@ -40,6 +40,7 @@ import org.apache.maven.model.building.ModelBuildingException;
 import org.apache.maven.model.building.ModelBuildingRequest;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
+import org.apache.maven.plugins.annotations.Mojo;
 import org.apache.maven.plugins.annotations.Parameter;
 import org.apache.maven.project.ProjectBuildingRequest.RepositoryMerging;
 import org.apache.maven.project.ProjectModelResolver;
@@ -56,6 +57,7 @@ import java.text.SimpleDateFormat;
 import java.util.*;
 
 import static com.isomorphic.maven.packaging.License.*;
+import static com.isomorphic.maven.packaging.Product.REIFY_ONSITE;
 
 /**
  * A base class meant to deal with prerequisites to install / deploy goals,
@@ -74,25 +76,14 @@ public abstract class AbstractPackagerMojo extends AbstractBaseMojo {
 
     private HttpRequestManager httpWorker;
 
-    /**
-     * If true, the optional analytics module (bundled and distributed
-     * separately) has been licensed and should be downloaded with the
-     * distribution specified by {@link #license}.
-     *
-     * @since 1.0.0
-     */
-    @Parameter(property = "includeAnalytics", defaultValue = "false")
-    protected Boolean includeAnalytics;
-
-    /**
-     * If true, the optional AI module (bundled and distributed
-     * separately) has been licensed and should be downloaded with the
-     * distribution specified by {@link #license}.
-     *
-     * @since 1.4.7
-     */
-    @Parameter(property = "includeAI", defaultValue = "false")
-    protected Boolean includeAI;
+    // Note, @parameter definitions and docs for these properties factored down to InstallMojo
+    // and DeployMojo because they are not applicable to everything that extends this base
+    // class, and there does not appear to be a way to suppress or hide the docs per-subclass
+    // The variables were also renamed to prevent any possibility that they would be
+    // auto-mapped by Maven
+    protected Boolean incAnalytics = false;
+    protected Boolean incAI = false;
+    protected Boolean incMessaging = false;
 
     /**
      * The date on which the Isomorphic build was made publicly available at <a
@@ -121,39 +112,8 @@ public abstract class AbstractPackagerMojo extends AbstractBaseMojo {
     @Parameter(property = "buildNumber", required = true)
     protected String buildNumber;
 
-    /**
-     * One of: LGPL, EVAL, PRO, POWER, ENTERPRISE.  As of version 1.4.7, it is no longer valid
-     * to specify optional modules like ANALYTICS_MODULE for this property.  To include
-     * optional modules ANALYTICS_MODULE, MESSAGING_MODULE or AI_MODULE, use the
-     * {@link #includeAnalytics} / {@link #includeMessaging} / {@link #includeAI} properties,
-     * respectively, to cause the optional modules to be included with the base
-     * installation / deployment.
-     *
-     * @since 1.0.0
-     */
-    @Parameter(property = "license", required = true)
     protected License license;
-
-    /**
-     * Limits the skins installed with the runtime to the names in this comma-separated list.
-     * E.g., <code>-Dskins=Tahoe,Stratus</code> will remove all skins except Tahoe and Stratus.
-     * Note that these deleted resources cannot be recovered except by reinstalling the artifact(s) to
-     * your repository.
-     *
-     * @since 1.4.6
-     */
-    @Parameter(property = "skins")
     protected String skins;
-
-    /**
-     * If true, the optional messaging module (bundled and distributed
-     * separately) has been licensed and should be downloaded with the
-     * distribution specified by {@link #license}.
-     *
-     * @since 1.0.0
-     */
-    @Parameter(property = "includeMessaging", defaultValue = "false")
-    protected Boolean includeMessaging;
 
     /**
      * If true, any file previously downloaded / unpacked will be overwritten
@@ -165,15 +125,7 @@ public abstract class AbstractPackagerMojo extends AbstractBaseMojo {
     @Parameter(property = "overwrite", defaultValue = "false")
     protected Boolean overwrite;
 
-    /**
-     * If true, makes a copy of the given distribution in a 'latest' subdirectory.
-     * Can be useful for bookmarking documentation, etc. but adds additional install time
-     * and storage requirements.
-     *
-     * @since 1.4.0
-     */
-    @Parameter(property = "copyToLatestFolder", defaultValue = "false")
-    protected Boolean copyToLatestFolder;
+    protected Boolean copyToLatest = false;
 
     /**
      * If true, no attempt is made to download any remote distribution. Files
@@ -194,41 +146,9 @@ public abstract class AbstractPackagerMojo extends AbstractBaseMojo {
     @Parameter(property = "skipDownload", defaultValue = "false")
     protected Boolean skipDownload;
 
-    /**
-     * If true, no attempt it made to extract the contents of any distribution.
-     * Only useful in the case where some manual intervention is required
-     * between download and another step. For example, it would be possible to
-     * first run the download goal, manipulate the version number of some
-     * dependency in some POM, and then run the install goal with
-     * skipExtraction=false to prevent the modified POM from being overwritten.
-     * <p>
-     * This is the kind of thing that should generally be avoided, however.
-     */
-    @Parameter(property = "skipExtraction", defaultValue = "false")
-    protected Boolean skipExtraction;
-
-    /**
-     * One of SMARTGWT, SMARTCLIENT.
-     *
-     * @since 1.0.0
-     */
-    @Parameter(property = "product", defaultValue = "SMARTGWT")
+    protected Boolean skipExtract = false;
     protected Product product;
-
-    /**
-     * If true, artifacts should be <a href=
-     * "http://books.sonatype.com/mvnref-book/reference/pom-relationships-sect-pom-syntax.html#pom-reationships-sect-versions"
-     * >versioned</a> with the 'SNAPSHOT' qualifier, in the case of development
-     * builds only. The setting has no effect on patch builds.
-     * <p>
-     * If false, each artifact's POM file is modified to remove the unwanted
-     * qualifier. This can be useful if you need to deploy a development build
-     * to a production environment.
-     *
-     * @since 1.0.0
-     */
-    @Parameter(property = "snapshots", defaultValue = "true")
-    protected Boolean snapshots;
+    protected Boolean snapshots = false;
 
     /**
      * The path to some directory that is to be used for storing downloaded
@@ -268,6 +188,11 @@ public abstract class AbstractPackagerMojo extends AbstractBaseMojo {
      */
     public abstract void doExecute(Set<Module> artifacts) throws MojoExecutionException,
         MojoFailureException;
+
+    public void doExecute(File basedir) throws MojoExecutionException, MojoFailureException {
+        throw new MojoExecutionException("The doExecute() override that accepts a File object is not supported for " +
+                                            "goal " + getClass().getAnnotation(Mojo.class).name());
+    }
 
     /**
      * Provides some initialization and validation steps around the collection
@@ -317,7 +242,8 @@ public abstract class AbstractPackagerMojo extends AbstractBaseMojo {
                 String link = dl.findCurrentBuild(d, buildNumber);
 
                 if (link == null) {
-                    throw new MojoExecutionException("No build found for the given distribution.");
+                    throw new MojoExecutionException("No build found for the given distribution (" +
+                                    product.getName() + "/" + license.getName() + ")");
                 }
 
                 LOGGER.debug("Extracting date from server response: '{}'", link);
@@ -337,13 +263,13 @@ public abstract class AbstractPackagerMojo extends AbstractBaseMojo {
             List<License> licenses = new ArrayList<License>();
             licenses.add(license);
             if (license == POWER || license == ENTERPRISE) {
-                if (includeAnalytics) {
+                if (incAnalytics) {
                     licenses.add(ANALYTICS_MODULE);
                 }
-                if (includeMessaging) {
+                if (incMessaging) {
                     licenses.add(MESSAGING_MODULE);
                 }
-                if (includeAI) {
+                if (incAI) {
                     licenses.add(AI_MODULE);
                 }
             }
@@ -351,31 +277,40 @@ public abstract class AbstractPackagerMojo extends AbstractBaseMojo {
             // collect the maven artifacts and send them along to the abstract method
             Set<Module> artifacts = collect(licenses, basedir);
 
-            String[] executables = { "bat", "sh", "command" };
-            Collection<File> scripts = FileUtils.listFiles(basedir, executables, true);
+            // Although this is a Maven plugin, the install-reify-onsite and
+            // upgrade-reify-onsite targets do not deal with Maven assets - they are deployment
+            // tasks, and they copy files to the target directory structure, even if they are
+            // files that would be managed by Maven in a Maven project (eg, JAR files).  So we
+            // can just skip straight to the  Mojo's execute() method for REIFY_ONSITE targets
 
-            if (copyToLatestFolder) {
-                File bookmarkable = new File(basedir.getParent(), "latest");
-                LOGGER.info("Copying distribution to '{}'", bookmarkable.getAbsolutePath());
-                try {
-                    FileUtils.forceMkdir(bookmarkable);
-                    FileUtils.cleanDirectory(bookmarkable);
-                    FileUtils.copyDirectory(basedir, bookmarkable,
-                        FileFilterUtils.notFileFilter(FileFilterUtils.nameFileFilter("zip")));
+            if (product != REIFY_ONSITE) {
+                String[] executables = {"bat", "sh", "command"};
+                Collection<File> scripts = FileUtils.listFiles(basedir, executables, true);
 
-                    scripts.addAll(FileUtils.listFiles(bookmarkable, executables, true));
+                if (copyToLatest) {
+                    File bookmarkable = new File(basedir.getParent(), "latest");
+                    LOGGER.info("Copying distribution to '{}'", bookmarkable.getAbsolutePath());
+                    try {
+                        FileUtils.forceMkdir(bookmarkable);
+                        FileUtils.cleanDirectory(bookmarkable);
+                        FileUtils.copyDirectory(basedir, bookmarkable,
+                                FileFilterUtils.notFileFilter(FileFilterUtils.nameFileFilter("zip")));
 
-                } catch (IOException e) {
-                    throw new MojoFailureException("Unable to copy distribution contents", e);
+                        scripts.addAll(FileUtils.listFiles(bookmarkable, executables, true));
+
+                    } catch (IOException e) {
+                        throw new MojoFailureException("Unable to copy distribution contents", e);
+                    }
                 }
-            }
 
-            for (File script : scripts) {
-                script.setExecutable(true);
-                LOGGER.debug("Enabled execute permissions on file '{}'", script.getAbsolutePath());
+                for (File script : scripts) {
+                    script.setExecutable(true);
+                    LOGGER.debug("Enabled execute permissions on file '{}'", script.getAbsolutePath());
+                }
+                doExecute(artifacts);
+            } else {
+                doExecute(basedir);
             }
-
-            doExecute(artifacts);
 
         } catch (ParseException e) {
             throw new MojoExecutionException(String.format(
@@ -431,15 +366,18 @@ public abstract class AbstractPackagerMojo extends AbstractBaseMojo {
                 distributions.add(distribution);
             }
 
-            if (!skipExtraction) {
+            if (!skipExtract) {
                 LOGGER.info("Unpacking downloaded file/s to '{}'", basedir);
                 for (Distribution distribution : distributions) {
                     distribution.unpack(basedir);
-                    if (skins != null) {
-                        LOGGER.info("Pruning unwanted skins...");
+                    if (skins != null || product == REIFY_ONSITE) {
                         skin(basedir, distribution.getSkinResources());
                     }
                 }
+            }
+
+            if (product == REIFY_ONSITE) {
+                return null;
             }
 
             // TODO it'd be better if this didn't have to know where the files were located after unpacking
@@ -559,7 +497,10 @@ public abstract class AbstractPackagerMojo extends AbstractBaseMojo {
         return model;
     }
 
-    private void skin(File basedir, Map<String, String> skinResources) throws MojoExecutionException, IOException {
+    protected void skin(File basedir, Map<String, String> skinResources) throws MojoExecutionException, IOException {
+
+        LOGGER.info("Pruning unwanted skins...");
+
         Map<String, String> props = new HashMap<>();
         props.put("create", "false");
 

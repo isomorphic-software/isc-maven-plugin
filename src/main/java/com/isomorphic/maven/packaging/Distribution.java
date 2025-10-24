@@ -98,6 +98,7 @@ public final class Distribution {
         create(SMARTCLIENT, ANALYTICS_MODULE);
         create(SMARTCLIENT, MESSAGING_MODULE);
         create(SMARTCLIENT, AI_MODULE);
+        create(REIFY_ONSITE, ENTERPRISE);
 
         //the smartgwt lgpl edition provides links to a bunch of resources that are also contained in the .zip - ignore them
         create(SMARTGWT, LGPL)
@@ -184,6 +185,10 @@ public final class Distribution {
                 .skins("/lib/smartgwt-" + license.getName() + ".jar", "com/smartclient/theme");
 
             pomIncludes.add(POM_SMARTGWT);
+        } else if (product == REIFY_ONSITE) {
+            // Handling skins in the REIFY_ONSITE goals is different from regular framework
+            // goals - see the custom impl in AbstractReifyOnSiteGoalsMojo
+            distribution.skins("REIFY_ONSITE", "isomorphic/skins");
         }
         pomIncludes.add("**/" + product.getName() + "-" + license.getName() + "*");
         pomIncludes.add(POM_SHARED);
@@ -403,20 +408,37 @@ public final class Distribution {
 
             //otherwise extract contents (again renaming / relocating contents as necessary)
             ZipFile zip = new ZipFile(file);
-            Enumeration<? extends ZipEntry> entries = zip.entries();
+            if (product != REIFY_ONSITE) {
+                Enumeration<? extends ZipEntry> entries = zip.entries();
 
-            while (entries.hasMoreElements()) {
-                ZipEntry entry = entries.nextElement();
-                if (entry.isDirectory()) {  // OR entry matches skin exclusion
-                    continue;
-                }
-                for(Map.Entry<String, AntPathMatcherFilter> filterEntry : content.entrySet()) {
-                    AntPathMatcherFilter filter = filterEntry.getValue();
-                    if (filter.accept(entry.getName())) {
-                        File target = FileUtils.getFile(to, ArchiveUtils.rewritePath(entry.getName(), filterEntry.getKey()));
-                        FileUtils.copyInputStreamToFile(zip.getInputStream(entry), target);
-                        LOGGER.debug("Copied input stream to file '{}'", target.getAbsolutePath());
+                while (entries.hasMoreElements()) {
+                    ZipEntry entry = entries.nextElement();
+                    if (entry.isDirectory()) {  // OR entry matches skin exclusion
+                        continue;
                     }
+                    for (Map.Entry<String, AntPathMatcherFilter> filterEntry : content.entrySet()) {
+                        AntPathMatcherFilter filter = filterEntry.getValue();
+                        if (filter.accept(entry.getName()) || product == REIFY_ONSITE) {
+                            File target = FileUtils.getFile(to, ArchiveUtils.rewritePath(entry.getName(), filterEntry.getKey()));
+                            FileUtils.copyInputStreamToFile(zip.getInputStream(entry), target);
+                            LOGGER.debug("Copied input stream to file '{}'", target.getAbsolutePath());
+                        }
+                    }
+                }
+            } else {
+                // The REIFY_ONSITE goals are completely different from regular framework install goals.
+                // We don't need to be selective, or rename assets, or move them elsewhere - we can
+                // just unzip
+                Enumeration<? extends ZipEntry> entries = zip.entries();
+
+                while (entries.hasMoreElements()) {
+                    ZipEntry entry = entries.nextElement();
+                    if (entry.isDirectory()) {  // OR entry matches skin exclusion
+                        continue;
+                    }
+                    File target = FileUtils.getFile(to, entry.getName());
+                    FileUtils.copyInputStreamToFile(zip.getInputStream(entry), target);
+                    LOGGER.debug("Copied input stream to file '{}'", target.getAbsolutePath());
                 }
             }
             zip.close();

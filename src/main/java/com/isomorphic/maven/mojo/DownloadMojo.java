@@ -23,6 +23,7 @@ import com.isomorphic.maven.packaging.Module;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugins.annotations.Mojo;
+import org.apache.maven.plugins.annotations.Parameter;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -35,6 +36,42 @@ import java.util.Set;
 public final class DownloadMojo extends AbstractPackagerMojo {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DownloadMojo.class);
+
+    /**
+     * If true, the optional messaging module (bundled and distributed
+     * separately) has been licensed and should be downloaded with the
+     * distribution specified by {@link #license}.
+     *
+     * @since 1.0.0
+     */
+    @Parameter(property = "includeMessaging", defaultValue = "false")
+    public void setIncludeMessaging(Boolean includeMessaging) {
+        this.incMessaging = includeMessaging;
+    }
+
+    /**
+     * If true, the optional analytics module (bundled and distributed
+     * separately) has been licensed and should be downloaded with the
+     * distribution specified by {@link #license}.
+     *
+     * @since 1.0.0
+     */
+    @Parameter(property = "includeAnalytics", defaultValue = "false")
+    public void setIncludeAnalytics(Boolean includeAnalytics) {
+        this.incAnalytics = includeAnalytics;
+    }
+
+    /**
+     * If true, the optional AI module (bundled and distributed
+     * separately) has been licensed and should be downloaded with the
+     * distribution specified by {@link #license}.
+     *
+     * @since 1.4.7
+     */
+    @Parameter(property = "includeAI", defaultValue = "false")
+    public void setIncludeAnI(Boolean includeAI) {
+        this.incAI = includeAI;
+    }
 
     @Override
     public void doExecute(Set<Module> artifacts) throws MojoExecutionException, MojoFailureException {

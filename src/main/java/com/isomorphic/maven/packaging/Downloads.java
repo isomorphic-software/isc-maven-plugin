@@ -42,6 +42,8 @@ import java.io.OutputStream;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.isomorphic.maven.packaging.Product.REIFY_ONSITE;
+
 /**
  * Connects to Isomorphic site, discovers which files exist for a given build, and downloads them 
  * to local file system. 
@@ -89,7 +91,7 @@ public class Downloads {
      * <p>
      * Refer to <a href="http://www.smartclient.com/builds/"></a>
      *
-     * @param product The product built and distributed by Isomorphic Software.  e.g., SmartCLient
+     * @param product The product built and distributed by Isomorphic Software.  e.g., SmartClient
      * @param buildNumber The build number of the desired distribution.  e.g., 4.1d
      * @param buildDate The date on which the distribution was made available
      * @param licenses The licenses, or editions, that the product is released under, and for which the user is registered
@@ -140,6 +142,14 @@ public class Downloads {
         for (String link : links) {
 
             String filename = FilenameUtils.getName(link);
+
+            if (distribution.product.equals(REIFY_ONSITE)) {
+                if (filename.indexOf("-SmartClient") == -1) {
+                    // Skip the SmartGWT package in the same download location...
+                    continue;
+                }
+            }
+
             File file = new File(toFolder, filename);
 
             if (file.exists() && !overwriteExistingFiles) {

@@ -22,7 +22,7 @@ import java.util.Set;
  * Refer to <a href="http://maven.apache.org/plugins/maven-deploy-plugin/deploy-file-mojo.html"></a>
  */
 @Mojo(name="deploy", requiresProject=false)
-public final class DeployMojo extends AbstractPackagerMojo {
+public final class DeployMojo extends AbstractCoreMavenGoalsMojo {
 
     private static final Logger LOGGER = LoggerFactory.getLogger(DeployMojo.class);
 

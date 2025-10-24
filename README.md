@@ -36,6 +36,8 @@ This plugin, based on work done previously in a user-contributed [google code pl
 
 * Deployment of each resulting SmartClient/SmartGWT artifact into your own repository manager, complete with javadoc attachments where applicable
 
+* Installation and non-destructive upgrade of the Reify OnSite product
+
 Refer to the [plugin site](http://github.smartclient.com/isc-maven-plugin/) for complete documentation. 
 
 

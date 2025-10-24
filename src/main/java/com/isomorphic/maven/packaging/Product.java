@@ -26,7 +26,8 @@ public enum Product {
 
     SMARTCLIENT("SmartClient"),
     SMARTGWT("SmartGWT"),
-    SMARTGWT_MOBILE("SmartGWT.mobile");
+    SMARTGWT_MOBILE("SmartGWT.mobile"),
+    REIFY_ONSITE("ReifyOnSite");
 
     private String label;
     private String name;

@@ -34,6 +34,8 @@ This plugin, based on work done previously in a user-contributed [google code pl
 * Installation of each resulting SmartClient/SmartGWT artifact into your local repository, complete with javadoc attachments where applicable
 
 * Deployment of each resulting SmartClient/SmartGWT artifact into your own [repository manager](http://maven.apache.org/repository-management.html), complete with javadoc attachments (created by plugin) where applicable
+
+* Installation and non-destructive upgrade of the Reify OnSite product
    
 
 ### Goals Overview
@@ -49,6 +51,12 @@ Other goals aim to simplify the use of additional products & services:
 [isc:reify-import](./reify-import-mojo.html) - To import project / screen definitions from [Reify] (https://www.reify.com/)
 
 [isc:reify-validate](./reify-validate-mojo.html) - To [check](https://www.smartclient.com/smartgwtee-latest/server/javadoc/com/isomorphic/tools/ReifyDataSourceValidator.html) for discrepancies between a project's MockDataSources and its working, or "live", counterparts (e.g., SQLDataSources) commonly found during the design / development cycle.  
+
+Goals to install and upgrade Reify OnSite (note, Reify OnSite is NOT a Maven project - these goals install or upgrade the actual product in the target directory you specify, they do not install anything to any Maven cache or repository)
+
+[isc:install-reify-onsite](./install-reify-onsite-mojo.html) - To install the Reify OnSite product locally, either standalone or as a webapp inside an existing servlet container
+
+[isc:upgrade-reify-onsite](./upgrade-reify-onsite-mojo.html) - To upgrade an existing Reify OnSite installation non-destructively - upgrades Reify client- and server-side assets but does not touch your settings or database, or any additional assets you have added locally
 
 ### Usage
 
