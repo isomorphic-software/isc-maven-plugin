@@ -58,7 +58,7 @@ public final class Distribution {
 
     //ant-style wildcards used at extraction for filtering the distribution for the JARs to be included
     private static final String JAR_INCLUDES = "**/isc-*.jar, **/isomorphic_*.jar, **/smartgwt-*.jar, **/archetype-*.jar";
-    private static final String JAR_EXCLUDES = "**/samples/**, **/*examples.jar, **/*tomcat*.jar, **/*isomorphic_web_services.jar, **/isomorphic_applets.jar";
+    private static final String JAR_EXCLUDES = "**/samples/**, **/*tomcat*.jar, **/*isomorphic_web_services.jar, **/isomorphic_applets.jar";
 
     //the following ant patterns currently yield files that are deliberately renamed (see static initialization block) - exclude them as well
     private static final String JAR_CONFLICTS = "**/smartgwtee.jar, **/isc-jakarta-oro*.jar, **/isomorphic_realtime_messaging.jar";
@@ -76,6 +76,8 @@ public final class Distribution {
     private static final String SMARTCLIENT_RUNTIME_INCLUDES = "**/smartclientRuntime/isomorphic/**, **/smartclientRuntime/WEB-INF/classes/**, **/smartclientRuntime/WEB-INF/iscTaglib.xml";
     private static final String SMARTCLIENT_SDK_INCLUDES = "**/smartclientSDK/tools/**";
     private static final String SMARTCLIENT_SDK_EXCLUDES = "**/dsBrowser.jsp,**/classBrowser.jsp,**/sqlBrowser.jsp,**/maven/**";
+
+    private static final String SMARTCLIENT_SHOWCASE_INCLUDES = "**/smartclientSDK/showcase/index.html, **/smartclientSDK/shared/**, **/smartclientSDK/examples/**, **/smartclientSDK/isomorphic/system/reference/exampleTree.js, **/smartclientSDK/isomorphic/system/reference/inlineExamples/**";
 
     //ant-style wildcards used at extraction for filtering the distribution for javadoc documentation resources
     private static final String SMARTCLIENT_JAVADOC = "**/smartclientSDK/isomorphic/system/reference/server/javadoc/**";
@@ -163,6 +165,7 @@ public final class Distribution {
             pomIncludes.add(POM_SMARTCLIENT);
             distribution
                     .contents("sdk/#smartclientSDK", "**/smartclientSDK/**", SMARTCLIENT_SDK_EXCLUDES)
+                    .contents("spring-boot", "**/smartclientSDK/maven/spring-boot/**", null)
                     //exclude optional modules bundled with eval, and instead allow them to be repackaged in assemblies, as they would normally be (leave development copies of RTM in place for the dev console)
                     .contents("assembly/smartclient-resources/#smartclientRuntime", SMARTCLIENT_RUNTIME_INCLUDES, "**/ISC_Analytics*,**/modules*/ISC_RealtimeMessaging*")
                     .skins("/assembly/smartclient-resources.zip", "isomorphic/skins")
@@ -173,7 +176,8 @@ public final class Distribution {
                     .contents("assembly/smartclient-messaging-resources/isomorphic/system/modules-debug", "**/modules-debug/ISC_RealtimeMessaging*", null)
                     .contents("assembly/smartclient-ai-resources/isomorphic/system/modules", "**/modules-debug/ISC_AI*", null)
                     .contents("assembly/smartclient-ai-resources/isomorphic/system/modules-debug", "**/modules-debug/ISC_AI*", null)
-                    .contents("assembly/smartclient-tools-resources/#smartclientSDK", SMARTCLIENT_SDK_INCLUDES, SMARTCLIENT_SDK_EXCLUDES);
+                    .contents("assembly/smartclient-tools-resources/#smartclientSDK", SMARTCLIENT_SDK_INCLUDES, SMARTCLIENT_SDK_EXCLUDES)
+                    .contents("assembly/smartclient-showcase-resources/#smartclientSDK", SMARTCLIENT_SHOWCASE_INCLUDES, null);
         } else if (product == SMARTGWT) {
 
             //TODO check this against smartclient optional modules - how did it behave before?
@@ -449,6 +453,84 @@ public final class Distribution {
          * Each subdirectory will get zipped up and then deleted
          */
         File assembliesDir = new File(to, "assembly");
+
+        // Before we zip up and delete the smartclient-resources directory, we need to add its
+        // contents to the Spring Boot starter JARs.  We do this by unzipping to a filesystem
+        // tree, adding to that tree, then zipping that up
+        File springBootDir = new File(to, "spring-boot/");
+        File springBootJar = null, springBootShowcaseJar = null;
+        if (springBootDir.exists()) {
+            String[] exts = {"jar"};
+            for (File file : FileUtils.listFiles(springBootDir, exts, true)) {
+                if (file.getName().contains("-showcase")) {
+                    springBootShowcaseJar = file;
+                } else if (!file.getName().contains("-jpa") && !file.getName().contains("-no-storage")) {
+                    springBootJar = file;
+                }
+            }
+
+            // NOTE: In both the base and showcase starters, we must place assets in META-INF/resources/
+            // rather than static/ because files in static/ are only visible to the client, and some of
+            // these files must be readable by the server (built-in types and schema dataSources in the
+            // base starter and example dataSources in the showcase starter)
+            if (springBootJar != null) {
+                File scResources = new File(assembliesDir, "smartclient-resources");
+                if (scResources.exists()) {
+                    String baseName = springBootJar.getName().substring(0, springBootJar.getName().lastIndexOf('.'));
+                    File workDir = new File(springBootDir, baseName);
+                    workDir.mkdirs();
+                    ArchiveUtils.unzip(springBootJar, workDir);
+                    springBootJar.delete();
+                    File scSpringBootLocation = new File(workDir, "META-INF/resources");
+                    scSpringBootLocation.mkdirs();
+                    FileUtils.listFiles(scResources, null, true).forEach(file -> {
+                        String relativePath = file.getAbsolutePath().substring(scResources.getAbsolutePath().length()+1);
+                        LOGGER.info("Relative path '{}'", relativePath);
+                        // Don't want the handful of config files in WEB-INF - we already have
+                        // those files in the correct places for Spring Boot as part of the
+                        // starter
+                        if (!(relativePath.startsWith("WEB-INF"))) {
+                            File target = new File(scSpringBootLocation, relativePath);
+                            try {
+                                FileUtils.copyFile(file, target);
+                            } catch (IOException ioe) {
+                                LOGGER.warn("Caught Exception while copying file '{}' to '{}'", file.getName(), target.getAbsolutePath(), ioe);
+                            }
+                        }
+                    });
+                    springBootJar = new File(springBootDir, baseName + ".jar");
+                    ArchiveUtils.zip(workDir, springBootJar);
+                }
+            }
+
+            if (springBootShowcaseJar != null) {
+                File scResources = new File(assembliesDir, "smartclient-showcase-resources");
+                if (scResources.exists()) {
+                    String baseName = springBootShowcaseJar.getName().substring(0, springBootShowcaseJar.getName().lastIndexOf('.'));
+                    File workDir = new File(springBootDir, baseName);
+                    workDir.mkdirs();
+                    ArchiveUtils.unzip(springBootShowcaseJar, workDir);
+                    springBootShowcaseJar.delete();
+                    File scSpringBootLocation = new File(workDir, "META-INF/resources");
+                    scSpringBootLocation.mkdirs();
+                    FileUtils.listFiles(scResources, null, true).forEach(file -> {
+                        String relativePath = file.getAbsolutePath().substring(scResources.getAbsolutePath().length()+1);
+                        // Bit of a hack, but this is a one-off
+                        if ("showcase/index.html".equals(relativePath)) {
+                            relativePath = "showcase.html";
+                        }
+                        File target = new File(scSpringBootLocation, relativePath);
+                        try {
+                            FileUtils.copyFile(file, target);
+                        } catch (IOException ioe) {
+                            LOGGER.warn("Caught Exception while copying file '{}' to '{}'", file.getName(), target.getAbsolutePath(), ioe);
+                        }
+                    });
+                    springBootShowcaseJar = new File(springBootDir, baseName + ".jar");
+                    ArchiveUtils.zip(workDir, springBootShowcaseJar);
+                }
+            }
+        }
 
         List assemblies = CollectionUtils.arrayToList(assembliesDir.listFiles(new FileFilter() {
             @Override

@@ -388,10 +388,14 @@ public abstract class AbstractPackagerMojo extends AbstractBaseMojo {
                 basedir,
                 FileFilterUtils.or(FileFilterUtils.suffixFileFilter("jar"),
                     FileFilterUtils.suffixFileFilter("xml"),
-                    FileFilterUtils.suffixFileFilter("zip")),
+                    FileFilterUtils.suffixFileFilter("zip"),
+                    // The Spring Boot starter parent is a one-off - a *.pom file with no
+                    // related JAR that does not live in a pom/ subdir
+                    new WildcardFileFilter("smartclient-spring-boot-starter-parent*.pom")),
                 FileFilterUtils.or(FileFilterUtils.nameFileFilter("lib"),
                     FileFilterUtils.nameFileFilter("pom"),
-                    FileFilterUtils.nameFileFilter("assembly"))
+                    FileFilterUtils.nameFileFilter("assembly"),
+                    FileFilterUtils.nameFileFilter("spring-boot"))
             );
 
             if (files.isEmpty()) {
@@ -415,7 +419,7 @@ public abstract class AbstractPackagerMojo extends AbstractBaseMojo {
                     Collection<File> poms = FileUtils.listFiles(basedir, filter,
                         TrueFileFilter.INSTANCE);
                     if (poms.size() != 1) {
-                        LOGGER.warn("Expected to find exactly 1 POM matching artifact with name '{}', but found {}.  Skpping installation.",base, poms.size());
+                        LOGGER.warn("Expected to find exactly 1 POM matching artifact with name '{}', but found {}.  Skipping installation.",base, poms.size());
                         continue;
                     }
 
