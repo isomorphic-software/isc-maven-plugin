@@ -485,7 +485,6 @@ public final class Distribution {
                     scSpringBootLocation.mkdirs();
                     FileUtils.listFiles(scResources, null, true).forEach(file -> {
                         String relativePath = file.getAbsolutePath().substring(scResources.getAbsolutePath().length()+1);
-                        LOGGER.info("Relative path '{}'", relativePath);
                         // Don't want the handful of config files in WEB-INF - we already have
                         // those files in the correct places for Spring Boot as part of the
                         // starter
