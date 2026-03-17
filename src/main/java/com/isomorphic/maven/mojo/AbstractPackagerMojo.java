@@ -391,7 +391,7 @@ public abstract class AbstractPackagerMojo extends AbstractBaseMojo {
                     FileFilterUtils.suffixFileFilter("zip"),
                     // The Spring Boot starter parent is a one-off - a *.pom file with no
                     // related JAR that does not live in a pom/ subdir
-                    new WildcardFileFilter("smartclient-spring-boot-starter-parent*.pom")),
+                    new WildcardFileFilter("smart*-spring-boot-starter-parent*.pom")),
                 FileFilterUtils.or(FileFilterUtils.nameFileFilter("lib"),
                     FileFilterUtils.nameFileFilter("pom"),
                     FileFilterUtils.nameFileFilter("assembly"),

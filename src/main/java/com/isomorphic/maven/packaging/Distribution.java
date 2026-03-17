@@ -186,7 +186,8 @@ public final class Distribution {
                 .contents("lib/smartgwt-messaging.jar", "**/messaging.jar", null)
                 .contents("lib/smartgwt-ai.jar", "**/ai.jar", null)
                 .skins("/lib/smartgwt-skins.jar", "com/smartclient/theme")
-                .skins("/lib/smartgwt-" + license.getName() + ".jar", "com/smartclient/theme");
+                .skins("/lib/smartgwt-" + license.getName() + ".jar", "com/smartclient/theme")
+                .contents("spring-boot", "**/maven/spring-boot/**", null);
 
             pomIncludes.add(POM_SMARTGWT);
         } else if (product == REIFY_ONSITE) {
@@ -497,6 +498,18 @@ public final class Distribution {
                             }
                         }
                     });
+
+                    // Add the worldDS dataSource to the core spring-boot starter - it's used in the Hello World example
+                    File sdkResources = new File(assembliesDir, "smartclient-showcase-resources");
+                    File worldDS = new File(sdkResources, "examples/shared/ds/worldDS.ds.xml");
+                    String relativePath = worldDS.getAbsolutePath().substring(sdkResources.getAbsolutePath().length()+1);
+                    File target = new File(scSpringBootLocation, relativePath);
+                    try {
+                        FileUtils.copyFile(worldDS, target);
+                    } catch (IOException ioe) {
+                        LOGGER.warn("Caught Exception while copying file '{}' to '{}'", worldDS.getName(), target.getAbsolutePath(), ioe);
+                    }
+
                     springBootJar = new File(springBootDir, baseName + ".jar");
                     ArchiveUtils.zip(workDir, springBootJar);
                 }
