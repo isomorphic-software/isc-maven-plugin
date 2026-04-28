@@ -408,6 +408,12 @@ public abstract class AbstractPackagerMojo extends AbstractBaseMojo {
 
                     String base = FilenameUtils.getBaseName(file.getName().replaceAll("_", "-"));
 
+                    // smartclient-showcase-resources.zip is a transient build artifact, not
+                    // something we should try to install
+                    if ("smartclient-showcase-resources.zip".equals(file.getName())) {
+                        continue;
+                    }
+
                     // poms don't need anything else
                     if ("xml".equals(FilenameUtils.getExtension(file.getName()))) {
                         result.add(new Module(getModelFromFile(file)));

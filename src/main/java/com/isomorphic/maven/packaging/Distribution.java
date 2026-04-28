@@ -58,7 +58,7 @@ public final class Distribution {
 
     //ant-style wildcards used at extraction for filtering the distribution for the JARs to be included
     private static final String JAR_INCLUDES = "**/isc-*.jar, **/isomorphic_*.jar, **/smartgwt-*.jar, **/archetype-*.jar";
-    private static final String JAR_EXCLUDES = "**/samples/**, **/*tomcat*.jar, **/*isomorphic_web_services.jar, **/isomorphic_applets.jar";
+    private static final String JAR_EXCLUDES = "**/samples/**, **/*tomcat*.jar, **/*isomorphic_web_services.jar, **/isomorphic_applets.jar, **/smartclient-showcase-resources*.jar";
 
     //the following ant patterns currently yield files that are deliberately renamed (see static initialization block) - exclude them as well
     private static final String JAR_CONFLICTS = "**/smartgwtee.jar, **/isc-jakarta-oro*.jar, **/isomorphic_realtime_messaging.jar";
@@ -528,7 +528,9 @@ public final class Distribution {
                     FileUtils.listFiles(scResources, null, true).forEach(file -> {
                         String relativePath = file.getAbsolutePath().substring(scResources.getAbsolutePath().length()+1);
                         // Bit of a hack, but this is a one-off
-                        if ("showcase/index.html".equals(relativePath)) {
+                        if ("showcase/index.html".equals(relativePath)
+                             || "showcase\\index.html".equals(relativePath))  // In case we are running on Windows
+                        {
                             relativePath = "showcase.html";
                         }
                         File target = new File(scSpringBootLocation, relativePath);

@@ -15,7 +15,7 @@
 
     <groupId>com.isomorphic</groupId>
     <artifactId>isc-maven-plugin</artifactId>
-    <version>1.5.3</version>
+    <version>1.5.4</version>
     <packaging>maven-plugin</packaging>
 
     <name>isc-maven-plugin</name>
@@ -69,11 +69,13 @@
       <tag>HEAD</tag>
   </scm>
 
-    <properties>
+    <properties> 
         <mvn.api.version>3.9.2</mvn.api.version>
 
       	<!-- default - override on the CLI -->
       	<isc.extras.version>13.1-p20250101</isc.extras.version>
+        <!-- Force UTF-8, in case we are building on Windows where the default is Cp1252 -->
+        <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     </properties>
 
     <distributionManagement>
