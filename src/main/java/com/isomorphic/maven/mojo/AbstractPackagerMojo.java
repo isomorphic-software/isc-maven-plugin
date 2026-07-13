@@ -76,11 +76,11 @@ public abstract class AbstractPackagerMojo extends AbstractBaseMojo {
 
     private HttpRequestManager httpWorker;
 
-    // Note, @parameter definitions and docs for these properties factored down to InstallMojo
-    // and DeployMojo because they are not applicable to everything that extends this base
-    // class, and there does not appear to be a way to suppress or hide the docs per-subclass
+    // Note, @parameter definitions and docs for these properties are factored down to
+    // AbstractCoreMavenGoalsMojo because they are not applicable to everything that extends
+    // this base class (e.g. the Reify OnSite goals have their own product/license defaults).
     // The variables were also renamed to prevent any possibility that they would be
-    // auto-mapped by Maven
+    // auto-mapped by Maven.
     protected Boolean incAnalytics = false;
     protected Boolean incAI = false;
     protected Boolean incMessaging = false;
